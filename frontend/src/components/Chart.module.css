@@ -1,0 +1,4 @@
+.chartContainer {
+  height: inherit;
+  overflow-y: scroll;
+}

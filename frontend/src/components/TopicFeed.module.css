@@ -1,0 +1,137 @@
+.row {
+  --bs-gutter-x: 0.5rem;
+}
+
+.topicFeed {
+  height: inherit;
+  overflow-y: scroll;
+}
+
+.searchBar {
+  display: flex;
+  justify-content: center;
+  background-color: var(--content-background-colour);
+  width: 400px;
+  height: 40px;
+  border-radius: 20px;
+  margin: 20px auto;
+  border: 2px solid transparent;
+}
+
+.searchButton {
+  display: block;
+  background-color: transparent;
+  border: none;
+  color: white;
+}
+
+.searchInput {
+  display: flex;
+  background-color: transparent;
+  border: none;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+  flex-grow: 1;
+  color: white;
+}
+
+.searchInput:focus-visible {
+  outline: none;
+}
+
+.selected {
+  border: 2px solid var(--selected);
+}
+
+.notfound-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+}
+
+.notfound-title {
+  margin-top: 100px;
+  font-size: 60px;
+  font-weight: 700;
+}
+
+.topic {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.searchTopic,
+.searchParameter,
+.edit {
+  display: inline-block;
+  border: 2px solid transparent;
+}
+
+.edit,
+.modify {
+  border-radius: 5px;
+  background-color: transparent;
+  color: white;
+}
+
+.edit {
+  border: none;
+  height: 2rem;
+  width: 2rem;
+}
+
+.edit:hover {
+  background-color: var(--button-hover);
+}
+
+.searchParameter input {
+  min-width: 550px;
+}
+
+.modify {
+  border: 2px solid var(--selected);
+  line-height: 1.2rem;
+  font-size: calc(1.3rem + 0.6vw);
+}
+
+.disabled {
+  border: 2px solid transparent;
+}
+
+.active {
+  color: var(--selected);
+}
+
+.searchTopic h4 {
+  padding: 1px;
+  border: 2px solid transparent;
+}
+
+@media screen and (max-width: 1200px) {
+  .searchParameter input {
+    min-width: 400px;
+  }
+  .searchTopic input {
+    width: 250px;
+  }
+
+  .modify {
+    line-height: 1.1rem;
+    font-size: calc(1rem + 0.6vw);
+  }
+}
+
+@media screen and (max-width: 1000px) {
+  .topic {
+    flex-direction: column;
+  }
+  .modify {
+    min-width: max-content;
+    width: auto;
+  }
+}

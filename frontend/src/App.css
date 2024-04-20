@@ -1,0 +1,19 @@
+.displayView {
+  display: flex;
+  height: calc(100vh - 40px);
+  justify-content: space-between;
+}
+
+.card {
+  box-shadow: rgba(255, 255, 255, 0.1) 0px 0px 0px 1px inset,
+    rgba(0, 0, 0, 0.9) 0px 0px 0px 1px;
+}
+
+.card-img-top {
+  max-height: 350px;
+  width: auto;
+  max-width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}

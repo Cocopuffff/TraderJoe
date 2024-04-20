@@ -1,0 +1,11 @@
+.card {
+  background-color: #4e4e4e;
+}
+
+.cardLink {
+  display: inline-block;
+  overflow-x: hidden;
+  word-break: break-all;
+  white-space: nowrap;
+  max-width: 100%;
+}

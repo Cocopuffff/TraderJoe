@@ -1,0 +1,181 @@
+.main {
+  position: relative;
+  display: flex;
+  height: calc(100vh - 40px);
+  justify-content: center;
+  align-items: center;
+}
+
+.logo {
+  border-radius: 50%;
+}
+
+.animationHolder {
+  position: absolute;
+
+  z-index: -1;
+  top: 0;
+  left: 0;
+}
+
+.logo-holder {
+  background: var(--main-colour);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 50%;
+  height: calc(100vh - 40px);
+  position: relative;
+  margin: 0 auto;
+}
+
+.bar {
+  position: relative;
+  height: calc((100vh - 40px) / 12);
+  width: 0%;
+  top: 0px;
+  left: 0px;
+  margin-top: 8px;
+  animation: fill 5s infinite alternate, colors 5s infinite alternate;
+}
+
+.bar.fill1 {
+  animation: fill-1 5s infinite alternate, colors 5s infinite alternate;
+}
+
+.bar.fill2 {
+  animation: fill-2 5s infinite alternate, colors 5s infinite alternate;
+}
+
+.bar.fill3 {
+  animation: fill-3 5s infinite alternate, colors 5s infinite alternate;
+}
+
+.bar.fill4 {
+  animation: fill-4 5s infinite alternate, colors 5s infinite alternate;
+}
+
+.bar.fill5 {
+  animation: fill-5 5s infinite alternate, colors 5s infinite alternate;
+}
+
+.bar.fill6 {
+  animation: fill-6 5s infinite alternate, colors 5s infinite alternate;
+}
+
+@keyframes fill {
+  0% {
+    width: 0;
+  }
+  33% {
+    width: 60px;
+  }
+  66% {
+    width: 20px;
+  }
+  100% {
+    width: 210px;
+  }
+}
+
+@keyframes fill-1 {
+  0% {
+    width: 0;
+  }
+  33% {
+    width: 100px;
+  }
+  66% {
+    width: 40px;
+  }
+  100% {
+    width: 260px;
+  }
+}
+
+@keyframes fill-2 {
+  0% {
+    width: 0;
+  }
+  33% {
+    width: 180px;
+  }
+  66% {
+    width: 140px;
+  }
+  100% {
+    width: 272px;
+  }
+}
+
+@keyframes fill-3 {
+  0% {
+    width: 0;
+  }
+  33% {
+    width: 100px;
+  }
+  66% {
+    width: 48px;
+  }
+  100% {
+    width: 218px;
+  }
+}
+
+@keyframes fill-4 {
+  0% {
+    width: 0;
+  }
+  33% {
+    width: 196px;
+  }
+  66% {
+    width: 68px;
+  }
+  100% {
+    width: 198px;
+  }
+}
+
+@keyframes fill-5 {
+  0% {
+    width: 0;
+  }
+  33% {
+    width: 60px;
+  }
+  66% {
+    width: 20px;
+  }
+  100% {
+    width: 296px;
+  }
+}
+
+@keyframes fill-6 {
+  0% {
+    width: 0;
+  }
+  33% {
+    width: 96px;
+  }
+  66% {
+    width: 44px;
+  }
+  100% {
+    width: 280px;
+  }
+}
+
+@keyframes colors {
+  0% {
+    background-color: var(--down-colour);
+  }
+  50% {
+    background-color: var(--up-colour);
+  }
+  100% {
+    background-color: var(--up-colour);
+  }
+}

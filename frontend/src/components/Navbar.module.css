@@ -1,0 +1,129 @@
+a {
+  display: block;
+  text-decoration: none;
+  color: white;
+  line-height: 40px;
+}
+
+.navbar {
+  display: flex;
+  height: 40px;
+  position: sticky;
+  background-color: var(--navbar-colour);
+  justify-content: space-between;
+  box-shadow: -20px 5px 10px 0px rgba(0, 0, 0, 0.5);
+}
+
+.logo,
+.account {
+  border-radius: 50%;
+  padding: 5px;
+}
+
+.logoContainer {
+  margin: 0 10px;
+  height: 40px;
+  width: 40px;
+}
+
+.logoContainer .logo {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+.toggleTimeFramesBtn {
+  height: 100%;
+  border: none;
+  background-color: transparent;
+}
+
+.hideTimeFramesIcon {
+  border: none;
+  background-color: transparent;
+  color: white;
+  transition: 0.5s ease-in-out;
+}
+
+.showTimeFramesIcon {
+  border: none;
+  background-color: transparent;
+  color: var(--selected);
+  rotate: -90deg;
+  transition: 0.3s ease-in-out;
+}
+
+.hideTimeFrames {
+  animation: fade-out 0.3s forwards;
+  height: 100%;
+}
+
+@keyframes fade-out {
+  100% {
+    opacity: 0;
+    display: none;
+  }
+}
+
+.showTimeFrames {
+  transition: 0.3s ease-in-out;
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.account,
+.dropdown {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dropdown {
+  position: relative;
+  padding-left: 10px;
+  padding-right: 10px;
+  height: 100%;
+  border: none;
+  background-color: transparent;
+  color: var(--button-hover);
+}
+
+.dropdownmenu {
+  display: none;
+  position: absolute;
+  z-index: 10;
+  top: 40px;
+  left: 0;
+  width: max-content;
+}
+
+.active {
+  display: block;
+}
+
+.account {
+  margin: 0 10px;
+  background-color: var(--content-background-colour);
+}
+
+.menu,
+.submenu {
+  display: flex;
+  align-items: center;
+}
+
+.menu {
+  justify-content: space-between;
+  width: 220px;
+}
+
+.pages {
+  flex-grow: 1;
+  text-align: center;
+}
+
+.active {
+  background-color: var(--selected);
+}

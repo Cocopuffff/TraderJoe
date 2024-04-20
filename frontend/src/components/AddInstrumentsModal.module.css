@@ -1,0 +1,124 @@
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.board {
+  background: var(--bs-gray-200);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
+  border-radius: 10px;
+}
+
+.modal {
+  position: fixed;
+  top: 10vh;
+  left: 10%;
+  width: 80%;
+  z-index: 100;
+  max-height: 80vh;
+}
+
+.header,
+.errorHeader {
+  padding: 1rem;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.header {
+  background: var(--selected);
+}
+
+.errorHeader {
+  background-color: var(--bs-danger);
+}
+
+.header h2 {
+  margin: 0;
+  color: white;
+}
+
+.subheader {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 1rem;
+}
+
+.subheader div {
+  color: black;
+  font-size: 1.4rem;
+}
+
+.searchRow {
+  display: flex;
+  border-bottom: 1px solid var(--button-hover);
+  align-items: center;
+}
+
+.searchIcon {
+  color: var(--bs-gray);
+  font-size: 1.4rem;
+  padding: 5px;
+}
+
+.search {
+  width: 100%;
+  font-size: 1.4rem;
+  padding: 5px;
+  border: none;
+  background: var(--bs-gray-200);
+}
+
+.search:focus-visible {
+  outline: none;
+}
+
+.content {
+  padding: 1rem;
+  color: black;
+  overflow-y: scroll;
+  max-height: 50vh;
+}
+
+.instrument {
+  border-top: 1px solid var(--content-background-colour);
+}
+
+.add {
+  border: none;
+  background-color: transparent;
+  color: black;
+  border-radius: 5px;
+  padding: 5px;
+}
+.add:hover {
+  background-color: var(--button-hover);
+  color: white;
+}
+
+.added {
+  border: none;
+  background-color: transparent;
+  color: var(--bs-success);
+  border-radius: 5px;
+  padding: 5px;
+  cursor: not-allowed !important;
+}
+
+.actions {
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (min-width: 600px) {
+  .modal {
+    left: calc(50% - 20rem);
+    width: 40rem;
+  }
+}

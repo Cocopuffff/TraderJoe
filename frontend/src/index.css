@@ -1,0 +1,40 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --button-hover: #5f5f5f;
+  --navbar-colour: #303030;
+  --sidebarlist-colour: #303030;
+  --main-colour: #222222;
+  --selected: #2447ff;
+  --content-background-colour: #4e4e4e;
+  --list-border: #ffffff0d;
+  --down-colour: #e1484c;
+  --up-colour: #429782;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: white;
+  background-color: var(--main-colour);
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+  border-radius: 7px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--content-background-colour);
+  border-radius: 7px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--selected);
+}

@@ -1,0 +1,30 @@
+.sideList {
+  background-color: var(--sidebarlist-colour);
+  width: 250px;
+  position: sticky;
+  overflow-y: scroll;
+  border-left: 1px solid var(--content-background-colour);
+}
+
+.sideList h6 {
+  margin: 0;
+}
+
+.header {
+  margin: 8px auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.add {
+  border: none;
+  background-color: transparent;
+  color: white;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+.add:hover {
+  background-color: var(--button-hover);
+}

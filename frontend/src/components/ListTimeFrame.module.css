@@ -1,0 +1,14 @@
+.timeFrame {
+  padding: 0 10px;
+  font-size: 0.8rem;
+  color: white;
+  background-color: var(--navbar-colour);
+  text-align: center;
+  border: none;
+  height: 100%;
+}
+
+.active {
+  color: var(--selected);
+  transition: 0.2s ease-in-out;
+}

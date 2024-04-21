@@ -7,6 +7,8 @@ import Navbar from "./components/Navbar";
 import "./App.css";
 
 const HomePage = React.lazy(() => import("./pages/HomePage"));
+const Login = React.lazy(() => import("./pages/Login"));
+const Register = React.lazy(() => import("./pages/Register"));
 const ManageStrategy = React.lazy(() => import("./pages/ManageStrategy"));
 const ReviewTraders = React.lazy(() => import("./pages/ReviewTraders"));
 const DisplayChart = React.lazy(() => import("./pages/DisplayChart"));
@@ -45,15 +47,50 @@ function App() {
   });
   const [isError, setIsError] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [accessToken, setAccessToken] = useState("");
+  const [role, setRole] = useState("");
+  const [id, setId] = useState("");
+  const [email, setEmail] = useState("");
+  const [expirationDate, setExpirationDate] = useState("");
+  const [showLogin, setShowLogin] = useState(true);
 
   const handleDismiss = () => {
     setIsError(false);
   };
 
+  const logOut = () => {
+    setExpirationDate("");
+    setAccessToken("");
+    setRole("");
+    setId("");
+    setEmail("");
+    if (localStorage.getItem("refreshToken")) {
+      localStorage.removeItem("refreshToken");
+    }
+  };
+
   return (
     <Suspense fallback={<Loader />}>
       <AppContext.Provider
-        value={{ isError, setIsError, errorMessage, setErrorMessage }}
+        value={{
+          isError,
+          setIsError,
+          errorMessage,
+          setErrorMessage,
+          accessToken,
+          setAccessToken,
+          role,
+          setRole,
+          id,
+          setId,
+          expirationDate,
+          setExpirationDate,
+          showLogin,
+          setShowLogin,
+          email,
+          setEmail,
+          logOut,
+        }}
       >
         <Navbar
           selectedTimeFrame={selectedTimeFrame}
@@ -62,6 +99,8 @@ function App() {
         />
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
           <Route path="review" element={<ReviewTraders />} />
           <Route path="strategies" element={<ManageStrategy />} />
           <Route

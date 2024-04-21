@@ -1,4 +1,5 @@
-a {
+.menu a,
+.submenu a {
   display: block;
   text-decoration: none;
   color: white;

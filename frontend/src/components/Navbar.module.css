@@ -63,21 +63,6 @@
   display: none;
 }
 
-@keyframes fade-out {
-  100% {
-    opacity: 0;
-    display: none;
-  }
-}
-
-.showTimeFrames {
-  transition: 0.3s ease-in-out;
-  opacity: 1;
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-
 .account,
 .dropdown {
   display: flex;
@@ -116,7 +101,7 @@
 .dropdown {
   position: absolute;
   top: 40.5px;
-  right: 0;
+  right: -3px;
   width: auto;
   height: auto;
   padding: 5px 30px;

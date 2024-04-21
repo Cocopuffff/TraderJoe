@@ -46,7 +46,6 @@ const Navbar = (props) => {
             <div
               className={
                 showTimeFrames ? styles.dropdown : styles.hideTimeFrames
-                // showTimeFrames ? styles.showTimeFrames : styles.hideTimeFrames
               }
             >
               {isChart &&

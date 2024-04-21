@@ -1,8 +1,8 @@
 from flask import Flask, Blueprint, request, jsonify, render_template
 from dotenv import load_dotenv
 import os
-from FlaskTemplate.view import data as website_data
-from FlaskTemplate.controllers import controller, auth
+from backend.view import data as website_data
+from backend.controllers import controller, auth
 
 import sys
 print(sys.path)

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template
 from dotenv import load_dotenv
-from FlaskTemplate.utilities import log_info, log_error, log_warning
+from backend.utilities import log_info, log_error, log_warning
 
 books_bp = Blueprint('movies', __name__, url_prefix='/api')
 

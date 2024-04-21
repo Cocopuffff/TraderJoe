@@ -4,6 +4,7 @@
   height: calc(100vh - 40px);
   justify-content: center;
   align-items: center;
+  z-index: 1;
 }
 
 .logo {

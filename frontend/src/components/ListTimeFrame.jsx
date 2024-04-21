@@ -7,6 +7,7 @@ const ListTimeFrame = (props) => {
 
   const handleClick = () => {
     props.setSelectedTimeFrame(props.timeFrame);
+    props.setShowTimeFrames(false);
   };
 
   useEffect(() => {

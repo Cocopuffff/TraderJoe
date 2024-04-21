@@ -1,0 +1,43 @@
+.header {
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo {
+  border-radius: 50%;
+  width: 200px;
+}
+
+.title {
+  margin: 20px auto;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  margin: 0 auto;
+  width: 500px;
+  text-align: center;
+}
+
+.form label {
+  min-width: 130px;
+}
+
+.button {
+  background-color: var(--up-colour);
+  margin: 30px auto;
+  width: 50%;
+  font-weight: 600;
+}
+
+.button:hover {
+  background-color: var(--up-colour);
+}
+
+.links {
+  text-decoration: none;
+  padding: 0 15px;
+}

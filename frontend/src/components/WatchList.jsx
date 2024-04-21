@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import ErrorContext from "../context/ErrorContext";
+import ErrorContext from "../context/AppContext";
 import SideList from "./SideList";
 
 const WatchList = (props) => {

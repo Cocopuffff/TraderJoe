@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Chart from "../components/Chart";
+import TradesMenu from "../components/TradesMenu";
 import WatchList from "../components/WatchList";
 import AddInstrumentsModal from "../components/AddInstrumentsModal";
 
@@ -8,6 +9,7 @@ const DisplayChart = (props) => {
   const [selectedInstrument, setSelectedInstrument] = useState("");
   const [newInstrument, setNewInstrument] = useState("");
   const [instrumentsWatchlist, setInstrumentsWatchlist] = useState(null);
+  const [viewTrades, setViewTrades] = useState(false);
 
   const passInstrument = (instrument) => {
     setNewInstrument(instrument);
@@ -27,16 +29,24 @@ const DisplayChart = (props) => {
           instrumentsWatchlist={instrumentsWatchlist}
         />
       )}
-      <Chart
-        count="300"
-        from=""
-        to=""
-        granularity={props.selectedTimeFrame}
-        addInstrument={addInstrument}
-        setAddInstrument={setAddInstrument}
-        selectedInstrument={selectedInstrument}
-        setSelectedInstrument={setSelectedInstrument}
-      />
+      {/* {JSON.stringify(viewTrades)} */}
+      <div className="displayChartVertical">
+        {!viewTrades && (
+          <Chart
+            count="300"
+            from=""
+            to=""
+            granularity={props.selectedTimeFrame}
+            addInstrument={addInstrument}
+            setAddInstrument={setAddInstrument}
+            selectedInstrument={selectedInstrument}
+            setSelectedInstrument={setSelectedInstrument}
+            viewTrades={viewTrades}
+          />
+        )}
+        <TradesMenu viewTrades={viewTrades} setViewTrades={setViewTrades} />
+      </div>
+
       <WatchList
         addInstrument={addInstrument}
         setAddInstrument={setAddInstrument}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import ErrorContext from "../context/ErrorContext";
+import AppContext from "../context/AppContext";
 import styles from "./Chart.module.css";
 import Spinner from "./Spinner";
 import ReactECharts from "echarts-for-react";
@@ -36,7 +36,7 @@ const Chart = (props) => {
   const [volumes, setVolume] = useState([]);
   const [dateTimes, setDateTimes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const ErrorCtx = useContext(ErrorContext);
+  const AppCtx = useContext(AppContext);
 
   const options = {
     grid: [
@@ -308,8 +308,8 @@ const Chart = (props) => {
     } catch (error) {
       if (error.name !== "AbortError") {
         console.log(error.message);
-        ErrorCtx.setIsError(true);
-        ErrorCtx.setErrorMessage(error.message);
+        AppCtx.setIsError(true);
+        AppCtx.setErrorMessage(error.message);
       }
       setIsLoading(false);
     }

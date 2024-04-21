@@ -1,5 +1,5 @@
 import React, { Suspense, useContext, useState } from "react";
-import ErrorContext from "./context/ErrorContext";
+import AppContext from "./context/AppContext";
 import ErrorModal from "./components/ErrorModal";
 import { Route, Routes } from "react-router-dom";
 import Loader from "./components/Loader";
@@ -7,7 +7,8 @@ import Navbar from "./components/Navbar";
 import "./App.css";
 
 const HomePage = React.lazy(() => import("./pages/HomePage"));
-const DisplayNews = React.lazy(() => import("./pages/DisplayNews"));
+const ManageStrategy = React.lazy(() => import("./pages/ManageStrategy"));
+const ReviewTraders = React.lazy(() => import("./pages/ReviewTraders"));
 const DisplayChart = React.lazy(() => import("./pages/DisplayChart"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
@@ -51,7 +52,7 @@ function App() {
 
   return (
     <Suspense fallback={<Loader />}>
-      <ErrorContext.Provider
+      <AppContext.Provider
         value={{ isError, setIsError, errorMessage, setErrorMessage }}
       >
         <Navbar
@@ -61,7 +62,8 @@ function App() {
         />
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="news" element={<DisplayNews />} />
+          <Route path="review" element={<ReviewTraders />} />
+          <Route path="strategies" element={<ManageStrategy />} />
           <Route
             path="chart"
             element={
@@ -77,7 +79,7 @@ function App() {
             okayClicked={handleDismiss}
           />
         )}
-      </ErrorContext.Provider>
+      </AppContext.Provider>
     </Suspense>
   );
 }

@@ -1,9 +1,9 @@
 .sideList {
   background-color: var(--sidebarlist-colour);
-  width: 250px;
+  width: 500px;
   position: sticky;
   overflow-y: scroll;
-  border-left: 1px solid var(--content-background-colour);
+  border-left: 3px solid var(--theme-border);
 }
 
 .sideList h6 {

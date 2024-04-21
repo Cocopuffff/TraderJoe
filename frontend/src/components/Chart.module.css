@@ -1,4 +1,4 @@
 .chartContainer {
-  height: inherit;
+  height: calc(100% - var(--tab-height));
   overflow-y: scroll;
 }

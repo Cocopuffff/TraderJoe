@@ -64,9 +64,17 @@ const Navbar = (props) => {
           className={(navData) =>
             navData.isActive ? `${styles.pages} ${styles.active}` : styles.pages
           }
-          to="/news"
+          to="/strategies"
         >
-          News
+          Strategies
+        </NavLink>
+        <NavLink
+          className={(navData) =>
+            navData.isActive ? `${styles.pages} ${styles.active}` : styles.pages
+          }
+          to="/review"
+        >
+          Review
         </NavLink>
         <div className={styles.account}>
           <FontAwesomeIcon icon={faUser} />

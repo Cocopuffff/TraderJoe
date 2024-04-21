@@ -7,11 +7,12 @@ a {
 
 .navbar {
   display: flex;
-  height: 40px;
+  height: 50px;
   position: sticky;
   background-color: var(--navbar-colour);
   justify-content: space-between;
-  box-shadow: -20px 5px 10px 0px rgba(0, 0, 0, 0.5);
+  border-bottom: 3px solid var(--theme-border);
+  /* box-shadow: -20px 5px 10px 0px rgba(0, 0, 0, 0.5); */
 }
 
 .logo,
@@ -116,7 +117,10 @@ a {
 
 .menu {
   justify-content: space-between;
-  width: 220px;
+}
+
+.menu > a {
+  padding: 0 20px;
 }
 
 .pages {
@@ -125,5 +129,5 @@ a {
 }
 
 .active {
-  background-color: var(--selected);
+  color: var(--selected);
 }

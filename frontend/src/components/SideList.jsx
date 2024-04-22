@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import styles from "./SideList.module.css";
 import ListItem from "./ListItem";
 import Spinner from "./Spinner";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
 
 const SideList = (props) => {
   const [selectedItemId, setSelectedItemId] = useState("");
@@ -36,7 +35,7 @@ const SideList = (props) => {
           <h6>{props.title}</h6>
         </div>
         <button onClick={liftAdd} className={`${styles.add}`}>
-          <FontAwesomeIcon icon={faPlus} />
+          <AddRoundedIcon />
         </button>
       </div>
       {props &&

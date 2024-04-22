@@ -1,10 +1,14 @@
 from flask import Blueprint, request, jsonify, render_template
 from dotenv import load_dotenv
+import os
 from backend.utilities import log_info, log_error, log_warning
 
 books_bp = Blueprint('movies', __name__, url_prefix='/api')
 
 load_dotenv()
+leverage = int(os.environ.get('LEVERAGE'))
+print(leverage)
+
 
 
 @books_bp.route('/')

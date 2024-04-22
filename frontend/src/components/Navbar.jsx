@@ -3,8 +3,6 @@ import { useLocation } from "react-router-dom";
 import styles from "./Navbar.module.css";
 import ListTimeFrame from "./ListTimeFrame";
 import { NavLink } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 import ArrowDropDownRoundedIcon from "@mui/icons-material/ArrowDropDownRounded";
 import AppContext from "../context/AppContext";

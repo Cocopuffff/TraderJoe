@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useRef } from "react";
 import styles from "./ListItem.module.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faX } from "@fortawesome/free-solid-svg-icons";
+import ClearIcon from "@mui/icons-material/Clear";
 
 const ListItem = (props) => {
   const [isActive, setActive] = useState(false);
@@ -58,7 +59,7 @@ const ListItem = (props) => {
         </div>
       )}
       <button
-        className={`col-2 ${styles.delete}  ${
+        className={`col-1 ${styles.delete}  ${
           isHover ? "" : `${styles.hidden}`
         } ${isButtonHover ? `${styles.active}` : ""}`}
         ref={buttonRef}
@@ -66,7 +67,7 @@ const ListItem = (props) => {
         onMouseEnter={() => setButtonHover(true)}
         onMouseLeave={() => setButtonHover(false)}
       >
-        <FontAwesomeIcon icon={faX} />
+        <ClearIcon />
       </button>
     </div>
   );

@@ -125,3 +125,5 @@ dist/
 .idea/
 .vscode/
 
+
+__pycache__/

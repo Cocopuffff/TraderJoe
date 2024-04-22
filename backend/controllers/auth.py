@@ -1,13 +1,17 @@
 import os
-
+import uuid
+from datetime import timedelta
 from flask import Blueprint, request, jsonify
 import bcrypt
 from backend.utilities import log_info, log_warning, log_error
 from backend.db.db import connect_to_db
 from dotenv import load_dotenv
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, JWTManager
 
 load_dotenv()
 manager_secret_key = os.environ.get('MANAGER_SECRET_KEY')
+access_secret = os.environ.get('ACCESS_SECRET')
+refresh_secret = os.environ.get('REFRESH_SECRET')
 
 # Models API page
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -16,13 +20,13 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 @auth_bp.get('/')
 def get_roles():
     roles_list = [
-        "admin", "user"
+        "Trader", "Manager"
     ]
 
     return jsonify(roles_list), 200
 
 
-@auth_bp.put('/register')
+@auth_bp.put('/register/')
 def register():
     try:
         # validate json body
@@ -50,7 +54,6 @@ def register():
             get_role_id = """
             SELECT role_id FROM user_roles WHERE role_name = %s
             """
-            print(f"Fetching role_id for role: {role}")
             cur.execute(get_role_id, (role,))
             role_result = cur.fetchone()
             if role_result is None:
@@ -91,9 +94,54 @@ def check_password(input_password, db_hash):
     """checking password"""
     try:
         password_bytes = input_password.encode('utf-8')
-        return bcrypt.checkpw(password_bytes, db_hash)
+        db_password_bytes = db_hash.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, db_password_bytes)
     except Exception as e:
         print(e)
         log_error(f"user input password {input_password} resulted in following error:\n{e}")
         return False
 
+
+@auth_bp.post('/login/')
+def login():
+    try:
+        # validate json body
+        data = request.json
+        email = data['email']
+        input_password = data['password']
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            get_hash = """
+            SELECT auth.id AS user_id, auth.password_hash, user_roles.role_name AS role_name
+            FROM auth
+            JOIN user_roles
+            ON user_roles.role_id = auth.role_id
+            WHERE email = %s
+            """
+            cur.execute(get_hash, (email,))
+            [user_id, password_hash, role_name] = cur.fetchone()
+        if check_password(input_password, password_hash):
+            access_claims = {
+                'role': role_name,
+                'id': user_id,
+                'jwt_id': uuid.uuid4()
+            }
+            refresh_claims = {
+                'role': role_name,
+                'id': user_id,
+                'jwt_id': uuid.uuid4()
+            }
+
+            access_token = create_access_token(identity=user_id,
+                                               fresh=True,
+                                               expires_delta=timedelta(minutes=20),
+                                               additional_claims=access_claims)
+            refresh_token = create_refresh_token(identity=user_id,
+                                                 expires_delta=timedelta(days=30),
+                                                 additional_claims=refresh_claims)
+
+            return jsonify({'access_token': access_token, 'refresh_token': refresh_token}), 200
+    except KeyError:
+        return jsonify({"status": "error", "msg": "missing parameters in body"}), 400
+    except Exception as e:
+        log_error(e)

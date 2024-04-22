@@ -4,11 +4,26 @@ import os
 from backend.view import data as website_data
 from backend.controllers import controller, auth
 from backend.view import data as website_data
+from flask_cors import CORS, cross_origin
+from flask_jwt_extended import JWTManager
 
 def create_app():
+    load_dotenv()
     app = Flask(__name__, static_folder='static')
+    CORS(app, resources={r"/*": {
+        "origins": "*",
+        "allow_headers": [
+            "Content-Type", "Authorization", "Access-Control-Allow-Credentials"
+        ],
+        "supports_credentials": True,
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    }})
+
+    app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY')
+
     app.register_blueprint(controller.books_bp)
     app.register_blueprint(auth.auth_bp)
+    jwt = JWTManager(app)
 
     @app.route('/')
     def index():

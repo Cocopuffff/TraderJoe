@@ -9,6 +9,7 @@ python-dotenv = "*"
 psycopg = {extras = ["binary"], version = "*"}
 flask-jwt-extended = "*"
 bcrypt = "*"
+flask-cors = "*"
 
 [dev-packages]
 

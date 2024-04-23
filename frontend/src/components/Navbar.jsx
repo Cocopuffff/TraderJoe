@@ -62,9 +62,9 @@ const Navbar = (props) => {
           </div>
         )}
       </div>
-      <div>id: {JSON.stringify(appCtx.id)}</div>
+      <div>id: {appCtx.id}</div>
       <div>role: {appCtx.role}</div>
-      <div>access exp: {JSON.stringify(appCtx.expirationDate)}</div>
+      <div>access exp: {appCtx.expirationDate.toLocaleString()}</div>
       <div className={styles.menu}>
         <NavLink
           className={(navData) =>

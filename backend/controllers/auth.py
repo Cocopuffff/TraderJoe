@@ -144,10 +144,76 @@ def login():
         log_error(e)
 
 
-@auth_bp.post("/refresh/")
+@auth_bp.post('/refresh/')
 @jwt_required(refresh=True)
 def refresh():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity, fresh=False)
     return jsonify({'access_token': access_token})
 
+
+@auth_bp.post('/check-email/')
+def check_email():
+    try:
+        data = request.json
+        email = data['email']
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            find_existing_email = """
+            SELECT LOWER(email)
+            FROM auth
+            WHERE email = %s
+            """
+            cur.execute(find_existing_email, (email,))
+            existing_email = cur.fetchone()
+            if existing_email:
+                return jsonify("duplicate email")
+            else:
+                return jsonify({"status": "ok", "msg": "email available"})
+    except KeyError:
+        return jsonify({"status": "error", "msg": "missing email parameter in body"}), 400
+    except Exception as e:
+        log_error(f"something went wrong while checking {email} for duplicates: {e}")
+
+
+@auth_bp.post('/check-name/')
+def check_name():
+    try:
+        data = request.json
+        name = data['display_name']
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            find_existing_email = """
+            SELECT LOWER(display_name)
+            FROM auth
+            WHERE display_name = %s
+            """
+            cur.execute(find_existing_email, (name,))
+            existing_name = cur.fetchone()
+            if existing_name:
+                return jsonify("duplicate email")
+            else:
+                return jsonify({"status": "ok", "msg": "email available"})
+    except KeyError:
+        return jsonify({"status": "error", "msg": "missing email parameter in body"}), 400
+    except Exception as e:
+        log_error(f"something went wrong while checking {email} for duplicates: {e}")
+
+
+@auth_bp.route('/roles/')
+def fetch_roles():
+    try:
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            find_existing_role = """
+            SELECT role_name
+            FROM user_roles
+            """
+            cur.execute(find_existing_role)
+            roles = cur.fetchall()
+            role_names = [role[0] for role in roles]
+            return jsonify({'account_types': role_names})
+    except KeyError:
+        return jsonify({"status": "error", "msg": "missing email parameter in body"}), 400
+    except Exception as e:
+        log_error(f"something went wrong: {e}")

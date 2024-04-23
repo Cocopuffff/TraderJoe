@@ -12,3 +12,9 @@
 .required {
   color: var(--bs-red);
 }
+
+.warning {
+  font-size: 0.8rem;
+  margin: -15px 0 5px 10px;
+  text-align: left;
+}

@@ -11,8 +11,10 @@ const Register = () => {
   const navigate = useNavigate();
 
   const [roles, setRoles] = useState([]);
+  const [duplicateDisplayNameWarning, setDuplicateDisplayNameWarning] =
+    useState(false);
   const [duplicateEmailWarning, setDuplicateEmailWarning] = useState(false);
-  const [name, setName] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accountType, setAccountType] = useState("");
@@ -24,8 +26,9 @@ const Register = () => {
 
   const handleChange = (event) => {
     switch (event.currentTarget.id) {
-      case "name":
-        setName(event.currentTarget.value);
+      case "displayName":
+        setDisplayName(event.currentTarget.value);
+        checkDuplicateName(displayName);
         break;
       case "email":
         const emailInput = event.currentTarget.value;
@@ -39,7 +42,7 @@ const Register = () => {
         setAccountType(event.currentTarget.value);
         break;
       case "secret-key":
-        setAccountType(event.currentTarget.value);
+        setSecretKey(event.currentTarget.value);
         break;
       default:
         appCtx.setErrorMessage(
@@ -51,10 +54,33 @@ const Register = () => {
   };
 
   const getRoles = async () => {
-    const res = await fetchData("/auth/enum");
+    const res = await fetchData("/auth/roles/");
     if (res.ok) {
-      setRoles(res.data.accountTypes);
+      setRoles(res.data.account_types);
     } else {
+      appCtx.setErrorMessage(res.data);
+      appCtx.isError(true);
+    }
+  };
+
+  const checkDuplicateName = async (name_input) => {
+    try {
+      const res = await fetchData(
+        "/auth/check-name/",
+        "POST",
+        { display_name: name_input },
+        undefined
+      );
+
+      if (res.data === "duplicate name") {
+        setDuplicateDisplayNameWarning(true);
+        return;
+      }
+
+      if (res.ok) {
+        setDuplicateDisplayNameWarning(false);
+      }
+    } catch (error) {
       appCtx.setErrorMessage(res.data);
       appCtx.isError(true);
     }
@@ -63,7 +89,7 @@ const Register = () => {
   const checkDuplicateEmail = async (emailInput) => {
     try {
       const res = await fetchData(
-        "/auth/check-email",
+        "/auth/check-email/",
         "POST",
         { email: emailInput },
         undefined
@@ -86,16 +112,24 @@ const Register = () => {
   const registerUser = async (event) => {
     try {
       event.preventDefault();
+      if (!(displayName && email && password && roles)) {
+        throw new Error("Mandatory fields have to be filled.");
+      }
+
       const newUser = {
-        name: name,
+        display_name: displayName,
         email: email,
         password: password,
         role: accountType,
       };
 
-      if (accountType === "manager") newUser.secretKey = secretKey;
-
-      const res = await fetchData("/auth/register", "PUT", newUser, undefined);
+      if (accountType === "Manager") {
+        if (!secretKey) {
+          throw new Error("Mandatory fields have to be filled.");
+        }
+        newUser.secret_key = secretKey;
+      }
+      const res = await fetchData("/auth/register/", "PUT", newUser, undefined);
       if (res.ok) {
         setEmail("");
         setPassword("");
@@ -111,9 +145,9 @@ const Register = () => {
     }
   };
 
-  //   useEffect(() => {
-  //     getRoles();
-  //   }, []);
+  useEffect(() => {
+    getRoles();
+  }, []);
 
   //   useEffect(() => {}, [accountType, duplicateEmailWarning]);
 
@@ -125,6 +159,29 @@ const Register = () => {
           <h2 className={styles.title}>Register for an account</h2>
         </div>
         <form className={styles.form}>
+          <div className="input-group mb-3">
+            <label
+              htmlFor="displayName"
+              className="input-group-text bg-dark-subtle"
+            >
+              Name<span className="required">*</span>
+            </label>
+            <input
+              id="displayName"
+              name="displayName"
+              type="text"
+              placeholder="Trader Joe"
+              onChange={handleChange}
+              value={displayName}
+              className="form-control"
+              required
+            />
+          </div>
+          {duplicateDisplayNameWarning && (
+            <div className="required warning">
+              <em>Display name is already registered.</em>
+            </div>
+          )}
           <div className="input-group mb-3">
             <label htmlFor="email" className="input-group-text bg-dark-subtle">
               Email<span className="required">*</span>
@@ -140,12 +197,12 @@ const Register = () => {
               className="form-control"
               required
             />
-            {duplicateEmailWarning && (
-              <div className="required">
-                <em>Email is already registered.</em>
-              </div>
-            )}
           </div>
+          {duplicateEmailWarning && (
+            <div className="required warning">
+              <em>Email is already registered.</em>
+            </div>
+          )}
           <div className="input-group mb-3">
             <label
               htmlFor="password"
@@ -187,13 +244,13 @@ const Register = () => {
                 roles.map((role) => {
                   return (
                     <option value={role} key={role}>
-                      {role.toUpperCase()}
+                      {role}
                     </option>
                   );
                 })}
             </select>
           </div>
-          {accountType === "manager" && (
+          {accountType === "Manager" && (
             <>
               <div className="input-group mb-3">
                 <label
@@ -203,9 +260,10 @@ const Register = () => {
                   Secret Key<span className="required">*</span>
                 </label>
                 <input
-                  id="secretKey"
-                  name="secretKey"
-                  type="text"
+                  id="secret-key"
+                  name="secret-key"
+                  type="password"
+                  placeholder="********"
                   onChange={handleChange}
                   value={secretKey}
                   className="form-control"

@@ -1,12 +1,11 @@
 import os
 import uuid
-from datetime import timedelta
 from flask import Blueprint, request, jsonify
 import bcrypt
 from backend.utilities import log_info, log_warning, log_error
 from backend.db.db import connect_to_db
 from dotenv import load_dotenv
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, JWTManager
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
 
 load_dotenv()
 manager_secret_key = os.environ.get('MANAGER_SECRET_KEY')
@@ -15,6 +14,31 @@ refresh_secret = os.environ.get('REFRESH_SECRET')
 
 # Models API page
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+
+
+def hash_password(password):
+    """Hash a password for storing."""
+    try:
+        salt = bcrypt.gensalt()
+        password_bytes = password.encode('utf-8')
+        password_hashed = bcrypt.hashpw(password_bytes, salt)
+        return password_hashed.decode('utf-8')
+    except Exception as e:
+        log_error(f"error in hashing password: {e}")
+        raise Exception("error in hashing password")
+
+
+def check_password(input_password, db_hash):
+    """checking password"""
+    try:
+        password_bytes = input_password.encode('utf-8')
+        db_password_bytes = db_hash.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, db_password_bytes)
+    except Exception as e:
+        print(e)
+        log_error(f"user input password {input_password} resulted in following error:\n{e}")
+        return False
+
 
 
 @auth_bp.get('/')
@@ -78,30 +102,6 @@ def register():
     return jsonify({"status": "ok", "msg": "account created"}), 201
 
 
-def hash_password(password):
-    """Hash a password for storing."""
-    try:
-        salt = bcrypt.gensalt()
-        password_bytes = password.encode('utf-8')
-        password_hashed = bcrypt.hashpw(password_bytes, salt)
-        return password_hashed.decode('utf-8')
-    except Exception as e:
-        log_error(f"error in hashing password: {e}")
-        raise Exception("error in hashing password")
-
-
-def check_password(input_password, db_hash):
-    """checking password"""
-    try:
-        password_bytes = input_password.encode('utf-8')
-        db_password_bytes = db_hash.encode('utf-8')
-        return bcrypt.checkpw(password_bytes, db_password_bytes)
-    except Exception as e:
-        print(e)
-        log_error(f"user input password {input_password} resulted in following error:\n{e}")
-        return False
-
-
 @auth_bp.post('/login/')
 def login():
     try:
@@ -134,10 +134,8 @@ def login():
 
             access_token = create_access_token(identity=user_id,
                                                fresh=True,
-                                               expires_delta=timedelta(minutes=20),
                                                additional_claims=access_claims)
             refresh_token = create_refresh_token(identity=user_id,
-                                                 expires_delta=timedelta(days=30),
                                                  additional_claims=refresh_claims)
 
             return jsonify({'access_token': access_token, 'refresh_token': refresh_token}), 200
@@ -145,3 +143,11 @@ def login():
         return jsonify({"status": "error", "msg": "missing parameters in body"}), 400
     except Exception as e:
         log_error(e)
+
+
+@auth_bp.post("/refresh/")
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity, fresh=False)
+    return jsonify({'access_token': access_token})

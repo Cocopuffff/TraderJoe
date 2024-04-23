@@ -127,3 +127,4 @@ dist/
 
 
 __pycache__/
+log/

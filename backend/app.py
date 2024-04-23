@@ -1,11 +1,13 @@
 from flask import Flask, Blueprint, request, jsonify, render_template
 from dotenv import load_dotenv
 import os
+from datetime import timedelta
 from backend.view import data as website_data
 from backend.controllers import controller, auth
 from backend.view import data as website_data
 from flask_cors import CORS, cross_origin
 from flask_jwt_extended import JWTManager
+
 
 def create_app():
     load_dotenv()
@@ -20,10 +22,12 @@ def create_app():
     }})
 
     app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY')
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
+    jwt = JWTManager(app)
 
     app.register_blueprint(controller.books_bp)
     app.register_blueprint(auth.auth_bp)
-    jwt = JWTManager(app)
 
     @app.route('/')
     def index():

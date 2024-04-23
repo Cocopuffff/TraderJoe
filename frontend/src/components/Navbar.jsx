@@ -62,6 +62,9 @@ const Navbar = (props) => {
           </div>
         )}
       </div>
+      <div>id: {JSON.stringify(appCtx.id)}</div>
+      <div>role: {appCtx.role}</div>
+      <div>access exp: {JSON.stringify(appCtx.expirationDate)}</div>
       <div className={styles.menu}>
         <NavLink
           className={(navData) =>
@@ -114,7 +117,7 @@ const Navbar = (props) => {
               >
                 Register
               </NavLink>
-              <NavLink to="/" onClick={() => appCtx.logOut}>
+              <NavLink to="/" onClick={appCtx.logOut}>
                 Log out
               </NavLink>
             </div>

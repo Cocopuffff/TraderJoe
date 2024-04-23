@@ -40,7 +40,6 @@ def check_password(input_password, db_hash):
         return False
 
 
-
 @auth_bp.get('/')
 def get_roles():
     roles_list = [
@@ -138,7 +137,7 @@ def login():
             refresh_token = create_refresh_token(identity=user_id,
                                                  additional_claims=refresh_claims)
 
-            return jsonify({'access_token': access_token, 'refresh_token': refresh_token}), 200
+            return jsonify({'access': access_token, 'refresh': refresh_token}), 200
     except KeyError:
         return jsonify({"status": "error", "msg": "missing parameters in body"}), 400
     except Exception as e:
@@ -151,3 +150,4 @@ def refresh():
     identity = get_jwt_identity()
     access_token = create_access_token(identity=identity, fresh=False)
     return jsonify({'access_token': access_token})
+

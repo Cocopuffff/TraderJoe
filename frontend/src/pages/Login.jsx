@@ -17,7 +17,7 @@ const Login = () => {
     try {
       event.preventDefault();
       const res = await fetchData(
-        "/auth/login",
+        "/auth/login/",
         "POST",
         { email: email, password: password },
         undefined

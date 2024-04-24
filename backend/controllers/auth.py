@@ -9,8 +9,6 @@ from flask_jwt_extended import create_access_token, create_refresh_token, get_jw
 
 load_dotenv()
 manager_secret_key = os.environ.get('MANAGER_SECRET_KEY')
-access_secret = os.environ.get('ACCESS_SECRET')
-refresh_secret = os.environ.get('REFRESH_SECRET')
 
 # Models API page
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -38,15 +36,6 @@ def check_password(input_password, db_hash):
         print(e)
         log_error(f"user input password {input_password} resulted in following error:\n{e}")
         return False
-
-
-@auth_bp.get('/')
-def get_roles():
-    roles_list = [
-        "Trader", "Manager"
-    ]
-
-    return jsonify(roles_list), 200
 
 
 @auth_bp.put('/register/')
@@ -142,6 +131,7 @@ def login():
         return jsonify({"status": "error", "msg": "missing parameters in body"}), 400
     except Exception as e:
         log_error(e)
+        return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500
 
 
 @auth_bp.post('/refresh/')
@@ -174,6 +164,7 @@ def check_email():
         return jsonify({"status": "error", "msg": "missing email parameter in body"}), 400
     except Exception as e:
         log_error(f"something went wrong while checking {email} for duplicates: {e}")
+        return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500
 
 
 @auth_bp.post('/check-name/')
@@ -197,7 +188,8 @@ def check_name():
     except KeyError:
         return jsonify({"status": "error", "msg": "missing email parameter in body"}), 400
     except Exception as e:
-        log_error(f"something went wrong while checking {email} for duplicates: {e}")
+        log_error(f"something went wrong while checking {name} for duplicates: {e}")
+        return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500
 
 
 @auth_bp.route('/roles/')
@@ -213,7 +205,6 @@ def fetch_roles():
             roles = cur.fetchall()
             role_names = [role[0] for role in roles]
             return jsonify({'account_types': role_names})
-    except KeyError:
-        return jsonify({"status": "error", "msg": "missing email parameter in body"}), 400
     except Exception as e:
         log_error(f"something went wrong: {e}")
+        return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500

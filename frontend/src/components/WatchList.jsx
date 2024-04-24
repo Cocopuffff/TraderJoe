@@ -1,33 +1,33 @@
 import React, { useState, useEffect, useContext } from "react";
-import ErrorContext from "../context/AppContext";
+import AppContext from "../context/AppContext";
 import SideList from "./SideList";
+import useFetch from "../hooks/useFetch";
 
 const WatchList = (props) => {
   const [instruments, setInstruments] = useState([]);
   const [priceChanges, setPriceChanges] = useState([]);
-  const ErrorCtx = useContext(ErrorContext);
+  const appCtx = useContext(AppContext);
+  const fetchData = useFetch();
 
-  const getInstruments = async (signal) => {
+  const getInstruments = async () => {
     try {
-      const res = await fetch(import.meta.env.VITE_AIRTABLE_WATCHLIST, {
-        signal,
-        headers: {
-          Authorization: `Bearer ${import.meta.env.VITE_AIRTABLE_APIKEY}`,
-        },
-      });
+      const res = await fetchData(
+        "/api/watchlist/",
+        "POST",
+        { id: appCtx.id },
+        appCtx.accessToken
+      );
+
       if (res.ok) {
-        const data = await res.json();
-        setInstruments(data);
+        setInstruments(res.data.watchlist);
         if (!props.selectedInstrument) {
-          props.setSelectedInstrument(data.records[0]);
+          props.setSelectedInstrument(res.data.watchlist[0]);
         }
       }
     } catch (error) {
-      if (error.name !== "AbortError") {
-        console.log(error.message);
-        ErrorCtx.setIsError(true);
-        ErrorCtx.setErrorMessage(error.message);
-      }
+      console.log(error.message);
+      appCtx.setIsError(true);
+      appCtx.setErrorMessage(error.message);
     }
   };
 
@@ -67,7 +67,6 @@ const WatchList = (props) => {
           };
           temp.push(newInst);
         }
-        console.log(temp);
         setPriceChanges(temp);
       }
     } catch (error) {
@@ -80,25 +79,21 @@ const WatchList = (props) => {
   };
 
   useEffect(() => {
-    const controller = new AbortController();
-    getInstruments(controller.signal);
-    return () => {
-      controller.abort();
-    };
+    getInstruments();
   }, []);
 
   useEffect(() => {
     if (props.newInstrument) {
       const temp = structuredClone(instruments);
-      temp.records.push(props.newInstrument);
+      temp.push(props.newInstrument);
       setInstruments(temp);
     }
   }, [props.newInstrument]);
 
   useEffect(() => {
-    if (instruments.records) {
-      const temp = structuredClone(instruments.records).map((record) => {
-        return record.fields.name;
+    if (instruments) {
+      const temp = structuredClone(instruments).map((record) => {
+        return record.name;
       });
       props.setInstrumentsWatchlist(temp);
     }
@@ -116,23 +111,18 @@ const WatchList = (props) => {
 
   const deleteInstrument = async (id) => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_AIRTABLE_WATCHLIST}/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_AIRTABLE_APIKEY}`,
-          },
-        }
+      const res = await fetchData(
+        `/api/watchlist/${id}/`,
+        "DELETE",
+        undefined,
+        appCtx.accessToken
       );
 
       if (res.ok) {
-        const data = await res.json();
-        const filteredInstruments = instruments.records.filter(
-          (record) => record.id !== id
+        const filteredInstruments = instruments.filter(
+          (record) => record.id != id
         );
-        setInstruments({ records: filteredInstruments });
+        setInstruments(filteredInstruments);
       }
     } catch (error) {
       console.log(error.message);
@@ -147,7 +137,7 @@ const WatchList = (props) => {
   };
 
   const handleSelect = (id) => {
-    const selectedInstrument = instruments.records.filter(
+    const selectedInstrument = instruments.watchlist.filter(
       (record) => record.id === id
     )[0];
     props.setSelectedInstrument(selectedInstrument);
@@ -156,7 +146,7 @@ const WatchList = (props) => {
   return (
     <>
       <SideList
-        records={instruments}
+        watchlist={instruments}
         title="Watchlist"
         handleDelete={handleDelete}
         handleAdd={handleAdd}

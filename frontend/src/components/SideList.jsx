@@ -38,34 +38,31 @@ const SideList = (props) => {
           <AddRoundedIcon />
         </button>
       </div>
-      {props &&
-        props.records &&
-        props.records.records &&
-        props.records.records.map((item, idx) => {
-          let priceChange;
-          if (props.priceChanges) {
-            const priceChangeObj = props.priceChanges.find(
-              (instrument) => instrument.instrument === item.fields.name
-            );
-            if (priceChangeObj) {
-              priceChange = priceChangeObj.priceChange;
-            }
-          }
-          return (
-            <ListItem
-              key={idx}
-              airtableId={item.id}
-              name={item.fields.name}
-              displayName={item.fields.displayName}
-              onDelete={liftDelete}
-              onSelect={handleSelect}
-              selectedId={selectedItemId}
-              addItem={props.addItem}
-              priceChange={priceChange}
-            />
+      {props?.watchlist?.map((item, idx) => {
+        let priceChange;
+        if (props.priceChanges) {
+          const priceChangeObj = props.priceChanges.find(
+            (instrument) => instrument.instrument === item.name
           );
-        })}
-      {!props.records.records && <Spinner />}
+          if (priceChangeObj) {
+            priceChange = priceChangeObj.priceChange;
+          }
+        }
+        return (
+          <ListItem
+            key={idx}
+            id={item.id}
+            name={item.name}
+            displayName={item.display_name}
+            onDelete={liftDelete}
+            onSelect={handleSelect}
+            selectedId={selectedItemId}
+            addItem={props.addItem}
+            priceChange={priceChange}
+          />
+        );
+      })}
+      {!props.watchlist && <Spinner />}
     </div>
   );
 };

@@ -29,7 +29,6 @@ const DisplayChart = (props) => {
           instrumentsWatchlist={instrumentsWatchlist}
         />
       )}
-      {/* {JSON.stringify(viewTrades)} */}
       <div className="displayChartVertical">
         {!viewTrades && (
           <Chart

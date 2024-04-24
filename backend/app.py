@@ -3,9 +3,9 @@ from dotenv import load_dotenv
 import os
 from datetime import timedelta
 from backend.view import data as website_data
-from backend.controllers import controller, auth
+from backend.controllers import watchlist, auth
 from backend.view import data as website_data
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 
@@ -26,7 +26,7 @@ def create_app():
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
     jwt = JWTManager(app)
 
-    app.register_blueprint(controller.books_bp)
+    app.register_blueprint(watchlist.watchlist_bp)
     app.register_blueprint(auth.auth_bp)
 
     @app.route('/')

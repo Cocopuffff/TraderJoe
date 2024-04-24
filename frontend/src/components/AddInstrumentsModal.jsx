@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import ReactDOM from "react-dom";
 import Spinner from "./Spinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -8,12 +8,16 @@ import {
   faCheckCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import styles from "./AddInstrumentsModal.module.css";
+import AppContext from "../context/AppContext";
+import useFetch from "../hooks/useFetch";
 
 const Overlay = (props) => {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState(null);
   const [filteredResult, setFilteredResult] = useState([]);
   const searchRef = useRef();
+  const appCtx = useContext(AppContext);
+  const fetchData = useFetch();
 
   const getInstruments = async (signal) => {
     try {
@@ -66,33 +70,26 @@ const Overlay = (props) => {
 
   const AddInstrumentToWatchlist = async (instrument) => {
     try {
-      let record = {
-        records: [
-          {
-            fields: {
-              name: instrument.name,
-              displayName: instrument.displayName,
-              type: instrument.type,
-            },
-          },
-        ],
+      let new_item = {
+        name: instrument.name,
+        display_name: instrument.displayName,
+        type: instrument.type,
       };
-      const res = await fetch(import.meta.env.VITE_AIRTABLE_WATCHLIST, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_AIRTABLE_APIKEY}`,
-        },
-        body: JSON.stringify(record),
-      });
+
+      const res = await fetchData(
+        "/api/watchlist/add/",
+        "PUT",
+        new_item,
+        appCtx.accessToken
+      );
 
       if (res.ok) {
-        const data = await res.json();
-        // console.log(data.records[0]);
-        props.handleAddInstrument(data.records[0]);
+        props.handleAddInstrument(res.data.new_instrument);
       }
     } catch (error) {
       console.log(error.message);
+      appCtx.setErrorMessage(error.message);
+      appCtx.setIsError(true);
     }
   };
 

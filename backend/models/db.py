@@ -9,7 +9,6 @@ import psycopg
 
 # Connect to an existing database
 with psycopg.connect("dbname=traderjoe user=db_user") as conn:
-
     # Open a cursor to perform database operations
     with conn.cursor() as cur:
 

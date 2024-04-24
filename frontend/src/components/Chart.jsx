@@ -113,9 +113,7 @@ const Chart = (props) => {
     ],
     series: [
       {
-        name:
-          props.selectedInstrument &&
-          props.selectedInstrument.fields.displayName,
+        name: props.selectedInstrument && props.selectedInstrument.displayName,
         data: values,
         type: "candlestick",
         itemStyle: {
@@ -195,8 +193,7 @@ const Chart = (props) => {
       ],
     },
     title: {
-      text:
-        props.selectedInstrument && props.selectedInstrument.fields.displayName,
+      text: props.selectedInstrument && props.selectedInstrument.displayName,
       left: "center",
       top: "top",
       textStyle: {
@@ -257,7 +254,7 @@ const Chart = (props) => {
       }
       setIsLoading(true);
       let url1 = `${import.meta.env.VITE_FXPRACTICE_OANDA}/v3/instruments/${
-        props.selectedInstrument.fields.name
+        props.selectedInstrument.name
       }/candles`;
 
       if (props.granularity || props.count || props.from || props.to) {
@@ -273,9 +270,9 @@ const Chart = (props) => {
 
       let url2 = `${import.meta.env.VITE_FXPRACTICE_OANDA}/v3/accounts/${
         import.meta.env.VITE_OANDA_ACCOUNT
-      }/candles/latest?candleSpecifications=${
-        props.selectedInstrument.fields.name
-      }:${props.granularity}:M`;
+      }/candles/latest?candleSpecifications=${props.selectedInstrument.name}:${
+        props.granularity
+      }:M`;
 
       const res1 = await fetch(url1, {
         signal,

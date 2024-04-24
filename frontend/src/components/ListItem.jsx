@@ -17,15 +17,15 @@ const ListItem = (props) => {
   const handleItemClick = (event) => {
     if (buttonRef.current && !buttonRef.current.contains(event.target)) {
       setActive(true);
-      props.onSelect(props.airtableId);
+      props.onSelect(props.id);
     }
   };
 
   const evaluateSelection = (id) => {
-    if (id !== props.airtableId) {
+    if (id !== props.id) {
       setActive(false);
     }
-    if (id === props.airtableId) {
+    if (id === props.id) {
       setActive(true);
     }
   };
@@ -43,7 +43,7 @@ const ListItem = (props) => {
       className={`row align-items-center ${styles["sidebarItem"]} ${
         isActive ? `${styles.selected}` : ""
       }`}
-      id={props.airtableId}
+      id={props.id}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onClick={handleItemClick}

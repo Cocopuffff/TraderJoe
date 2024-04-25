@@ -10,6 +10,7 @@ psycopg = {extras = ["binary"], version = "*"}
 flask-jwt-extended = "*"
 bcrypt = "*"
 flask-cors = "*"
+requests = "*"
 
 [dev-packages]
 

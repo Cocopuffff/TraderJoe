@@ -38,6 +38,54 @@ def check_password(input_password, db_hash):
         return False
 
 
+def allocate_initial_cash(trader_id, balance=1000):
+    # write sql statement to get unallocated capital
+    conn = None
+    try:
+        if not isinstance(trader_id, int):
+            raise TypeError("Trader ID must be an integer")
+        if not isinstance(balance, (float, int)):
+            raise TypeError("Balance must be a number")
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            check_sufficient_capital = """
+                SELECT balance FROM cash_balances
+                WHERE description = 'Unallocated Capital' AND id=1;
+                """
+            cur.execute(check_sufficient_capital)
+            unallocated_cash_balance = cur.fetchone()
+            if unallocated_cash_balance is None:
+                return jsonify({"status": "error", "msg": "Unallocated capital record not found"}), 404
+            if unallocated_cash_balance[0] < balance:
+                return jsonify({"status": "error", "msg": "Insufficient cash balance"}), 422
+
+            # update unallocated_capital
+            unallocated_cash_balance = unallocated_cash_balance[0]
+            unallocated_cash_balance -= balance
+            update_unallocated_cash_balance = """
+            UPDATE cash_balances
+            SET balance = %s
+            WHERE description = 'Unallocated Capital' AND id=1;
+            """
+            cur.execute(update_unallocated_cash_balance, (unallocated_cash_balance,))
+
+            # update trader balance
+            allocate_trader_balance = """
+            UPDATE cash_balances
+            SET balance = balance + %s
+            WHERE trader_id = %s
+            """
+            cur.execute(allocate_trader_balance, (balance, trader_id,))
+            conn.commit()
+    except Exception as e:
+        print(e)
+        log_error(f'something went wrong while allocating initial cash: {e}')
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            conn.close()
+
 @auth_bp.put('/register/')
 def register():
     try:
@@ -53,6 +101,7 @@ def register():
                 return jsonify({"status": "error", "msg": "an error has occurred"}), 500
 
         # check db for unique email & display name and valid role
+        new_trader_id = None
         conn = connect_to_db()
         with conn.cursor() as cur:
             find_duplicates = """
@@ -71,16 +120,23 @@ def register():
             if role_result is None:
                 return jsonify("invalid role"), 400
             role_id = role_result[0]
-
             hashed = hash_password(password)
-
             register_user = f"""
             INSERT INTO auth(display_name, password_hash, email, role_id) VALUES
             (%s, %s, %s, %s)
+            RETURNING id
             """
-
             cur.execute(register_user, (display_name, hashed, email, role_id))
+
+            new_trader_id = cur.fetchone()
+            print(new_trader_id[0])
+            initialise_cash_balance = """
+            INSERT INTO cash_balances (trader_id, balance) VALUES (%s, 0)
+            """
+            conn.execute(initialise_cash_balance, (new_trader_id[0],))
             conn.commit()
+            if role_id == 1:
+                allocate_initial_cash(new_trader_id[0])
     except KeyError:
         return jsonify({"status": "error", "msg": "missing parameters in body"}), 400
     except Exception as e:

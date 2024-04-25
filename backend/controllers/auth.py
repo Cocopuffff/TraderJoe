@@ -86,6 +86,7 @@ def allocate_initial_cash(trader_id, balance=1000):
         if conn:
             conn.close()
 
+
 @auth_bp.put('/register/')
 def register():
     try:

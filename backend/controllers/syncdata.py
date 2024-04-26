@@ -4,7 +4,6 @@ import os, requests, datetime
 from flask_jwt_extended import jwt_required, get_jwt
 from backend.utilities import log_info, log_error, log_warning
 from backend.db.db import connect_to_db, connect_to_db_dict_response
-import psycopg
 
 load_dotenv()
 oanda_platform = os.environ.get('OANDA_PLATFORM')
@@ -58,8 +57,11 @@ def sync_with_oanda():
                 """
                 check_closed_trade_response = log_trades_closed(response_data)
                 if check_closed_trade_response['updated']:
-                    # audit closed trade
                     audit_closed_trade_and_update_trader_nav(check_closed_trade_response['closed_trades'])
+
+                if check_open_trade_response['updated'] or check_reduced_trade_response['updated'] or check_closed_trade_response['updated']:
+                    # update latest transaction id in database (id, transaction_id, update_time)
+                    pass
                 return jsonify({'status': 'ok'}), 200
             except ValueError as e:
                 log_error(f'Invalid JSON response: {response_data}\nerror: {e}')

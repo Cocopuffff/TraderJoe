@@ -32,14 +32,29 @@ def get_trade_id_by_state(list_of_trade_states_dict, state):
 def sync_with_oanda():
     try:
         endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/changes"
-        latest_transaction_id = 4
+        db_latest_transaction_id = """
+        SELECT last_transaction_id 
+        FROM oanda_transaction_log
+        ORDER BY recorded_at DESC
+        LIMIT 1"""
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            cur.execute(db_latest_transaction_id)
+            latest_transaction_id_tuple = cur.fetchone()
+            if latest_transaction_id_tuple:
+                latest_transaction_id = latest_transaction_id_tuple[0]
+            else:
+                latest_transaction_id = 1
         payload = {'sinceTransactionID': latest_transaction_id}
         headers = {'Authorization': f'Bearer {oanda_API_key}', 'Connection': 'keep-alive'}
         response = requests.get(endpoint, params=payload, headers=headers)
         response_data = None
+        print(f'latest_transaction_id: {latest_transaction_id}')
         if response.status_code == 200:
             try:
                 response_data = response.json()
+                if int(response_data['lastTransactionID']) == latest_transaction_id:
+                    return jsonify({'status': 'ok', 'msg': 'already up to date'})
                 """
                 log_trades_opened and log_trades_reduced functions returns a dictionary:
                 updated: True   if successfully logged new trades
@@ -60,8 +75,8 @@ def sync_with_oanda():
                     audit_closed_trade_and_update_trader_nav(check_closed_trade_response['closed_trades'])
 
                 if check_open_trade_response['updated'] or check_reduced_trade_response['updated'] or check_closed_trade_response['updated']:
-                    # update latest transaction id in database (id, transaction_id, update_time)
-                    pass
+                    update_latest_polled_transaction(response_data)
+                update_latest_polled_transaction(response_data)
                 return jsonify({'status': 'ok'}), 200
             except ValueError as e:
                 log_error(f'Invalid JSON response: {response_data}\nerror: {e}')
@@ -119,7 +134,7 @@ def log_trades_opened(response):
                 else:
                     insert_new_trade = """
                     INSERT INTO trades (user_id, open_time, current_units, financing, transaction_id, initial_units, instrument, price, realized_pl, unrealized_pl, state_id, margin_used)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
                     values = (user_id, open_time, current_units, financing, transaction_id, initial_units, instrument, price, realized_pl, unrealized_pl, state_id, margin_used)
                     cur.execute(insert_new_trade, values)
@@ -352,3 +367,13 @@ def audit_closed_trade_and_update_trader_nav(list_of_closed_trades):
         if conn:
             conn.close()
 
+
+def update_latest_polled_transaction(response_data):
+    try:
+        new_transaction_id = response_data['lastTransactionID']
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            cur.execute("""INSERT INTO oanda_transaction_log (last_transaction_id) VALUES (%s)""", (new_transaction_id,))
+            conn.commit()
+    except Exception as e:
+        log_error(f'Something went wrong updating latest oanda polled transaction: {str(e)}')

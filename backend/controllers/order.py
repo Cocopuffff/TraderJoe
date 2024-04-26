@@ -42,12 +42,19 @@ def create_market_order_oanda():
         }
         response = requests.post(endpoint, headers=headers, json=data)
         # capture response data
+        response_data = None
         if response.status_code == 201:
-            add_client_extensions_to_trade()
-            return jsonify({'status': 'ok', 'msg': 'order created'}), 201
+            try:
+                response_data = response.json()
+                trade_id = response_data['orderFillTransaction']['id']
+                add_client_extensions_to_trade(trade_id)
+                return jsonify({'status': 'ok', 'msg': 'order created'}), 201
+            except ValueError as e:
+                log_error(f'Invalid JSON response: {response_data}\nerror: {e}')
+                return jsonify({'status': 'error', 'message': 'Invalid JSON response'}), 500
         else:
             log_error(f'Failed to create order: {response.status_code} {response.text}')
-            return jsonify({{'status code': response.status_code}, {'msg': response.text}})
+            return jsonify({'status code': response.status_code, 'msg': response.text})
     except Exception as e:
         log_error(f'Unexpected error: {str(e)}')
         return jsonify({'status': 'error', 'message': 'An unexpected error has occurred'}), 500
@@ -55,10 +62,9 @@ def create_market_order_oanda():
 
 @order_bp.post('/oanda/updateClientExtensions')
 @jwt_required()
-def add_client_extensions_to_trade():
+def add_client_extensions_to_trade(trade_id):
     try:
-        # endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/trades/{trade_id}/clientExtensions"
-        endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/trades/18/clientExtensions"
+        endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/trades/{trade_id}/clientExtensions"
         headers = {'Authorization': f'Bearer {oanda_API_key}', 'Connection': 'keep-alive'}
         data = {
             'clientExtensions': {
@@ -73,7 +79,7 @@ def add_client_extensions_to_trade():
             return jsonify({'status': 'ok', 'msg': 'order created, filled and corresponding trade client extensions updated'}), 201
         else:
             log_error(f'Failed to update client extensions for trade 18: {response.status_code} {response.text}')
-            return jsonify({{'status code': response.status_code}, {'msg': f'order created but failed to update client extensions for trade 18: {response.text}'}})
+            return jsonify({'status code': response.status_code, 'msg': f'order created but failed to update client extensions for trade 18: {response.text}'})
     except Exception as e:
         log_error(f'Unexpected error: {str(e)}')
         return jsonify({'status': 'error', 'message': 'An unexpected error has occurred'}), 500

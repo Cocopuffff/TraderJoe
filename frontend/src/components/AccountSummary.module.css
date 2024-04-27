@@ -1,0 +1,26 @@
+.container {
+  height: calc(100% - 50px - 50px);
+  font-size: 0.7rem;
+  overflow-y: scroll;
+}
+
+.subheader {
+  height: 3rem;
+  color: var(--subheader-colour);
+  display: flex;
+  align-items: center;
+}
+
+.rows {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-top: 1px solid var(--list-border);
+}
+
+.upColour {
+  color: var(--up-colour);
+}
+
+.downColour {
+  color: var(--down-colour);
+}

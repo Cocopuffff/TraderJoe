@@ -55,11 +55,17 @@ def get_summary_by_userid():
         conn = connect_to_db_dict_response()
         with conn.cursor() as cur:
             get_account_summary = """
-            SELECT *
-            FROM cash_balances
-            WHERE trader_id = %s
+            SELECT 
+                c.balance AS balance,
+                c.margin_used AS margin_used,
+                c.margin_available AS margin_available,
+                c.nav AS nav,
+                (SELECT SUM(net_realized_pl) FROM trade_audit WHERE user_id = %s) AS realized_pl,
+                (SELECT SUM(unrealized_pl) FROM trades WHERE user_id = %s) AS unrealized_pl
+            FROM cash_balances c
+            WHERE c.trader_id = %s
             """
-            cur.execute(get_account_summary, (user_id,))
+            cur.execute(get_account_summary, (user_id, user_id, user_id))
             result = cur.fetchone()
             result['currency'] = 'SGD'
             result['leverage'] = 20

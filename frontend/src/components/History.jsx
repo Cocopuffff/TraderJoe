@@ -58,14 +58,14 @@ const History = () => {
                   trade.realized_pl >= 0 ? styles.upColour : styles.downColour
                 }`}
               >
-                {trade.realized_pl}
+                {Number(trade.realized_pl).toFixed(2)}
               </div>
               <div
                 className={`col ${
                   trade.financing >= 0 ? styles.upColour : styles.downColour
                 }`}
               >
-                {trade.financing}
+                {Number(trade.financing).toFixed(2)}
               </div>
               <div className="col">{trade.transaction_id}</div>
             </div>

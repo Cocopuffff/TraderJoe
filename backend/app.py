@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 from datetime import timedelta
 from backend.view import data as website_data
-from backend.controllers import watchlist, auth, strategy, syncdata, order
+from backend.controllers import watchlist, auth, strategy, syncdata, order, tradesmenu
 from backend.view import data as website_data
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -31,6 +31,7 @@ def create_app():
     app.register_blueprint(strategy.strategy_bp)
     app.register_blueprint(syncdata.syncdata_bp)
     app.register_blueprint(order.order_bp)
+    app.register_blueprint(tradesmenu.trades_menu_bp)
 
     # Create / define directory to store python strategy scripts
     SCRIPT_FOLDER = os.path.join(app.root_path, 'scripts')

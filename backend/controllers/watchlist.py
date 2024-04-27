@@ -8,8 +8,6 @@ from backend.db.db import connect_to_db
 watchlist_bp = Blueprint('watchlist', __name__, url_prefix='/api/watchlist')
 
 load_dotenv()
-leverage = int(os.environ.get('LEVERAGE'))
-print(f'Leverage: {leverage}')
 
 
 @watchlist_bp.post('/')
@@ -18,8 +16,6 @@ def get_watchlist_instrument_by_userid():
     try:
         claims = get_jwt()
         user_id = claims['id']
-        # data = request.json
-        # user_id = data['id']
         conn = connect_to_db()
         with conn.cursor() as cur:
             get_watchlist = """

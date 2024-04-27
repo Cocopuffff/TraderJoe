@@ -9,6 +9,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token, get_jw
 
 load_dotenv()
 manager_secret_key = os.environ.get('MANAGER_SECRET_KEY')
+leverage = os.environ.get('LEVERAGE')
 
 # Models API page
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -38,44 +39,46 @@ def check_password(input_password, db_hash):
         return False
 
 
-def allocate_initial_cash(trader_id, balance=1000):
+def allocate_initial_cash(trader_id, add_balance=1000):
     # write sql statement to get unallocated capital
     conn = None
     try:
         if not isinstance(trader_id, int):
             raise TypeError("Trader ID must be an integer")
-        if not isinstance(balance, (float, int)):
-            raise TypeError("Balance must be a number")
+        if not isinstance(add_balance, (float, int)):
+            raise TypeError("add_balance must be a number")
         conn = connect_to_db()
         with conn.cursor() as cur:
             check_sufficient_capital = """
-                SELECT balance FROM cash_balances
+                SELECT balance, nav FROM cash_balances
                 WHERE description = 'Unallocated Capital' AND id=1;
                 """
             cur.execute(check_sufficient_capital)
-            unallocated_cash_balance = cur.fetchone()
-            if unallocated_cash_balance is None:
+            list_of_unallocated_cash_and_nav_tuples = cur.fetchone()
+            if list_of_unallocated_cash_and_nav_tuples is None:
                 return jsonify({"status": "error", "msg": "Unallocated capital record not found"}), 404
-            if unallocated_cash_balance[0] < balance:
+            if list_of_unallocated_cash_and_nav_tuples[0] < add_balance:
                 return jsonify({"status": "error", "msg": "Insufficient cash balance"}), 422
 
             # update unallocated_capital
-            unallocated_cash_balance = unallocated_cash_balance[0]
-            unallocated_cash_balance -= balance
+            unallocated_cash_balance = list_of_unallocated_cash_and_nav_tuples[0]
+            unallocated_cash_balance -= add_balance
+            unallocated_nav = list_of_unallocated_cash_and_nav_tuples[1]
+            unallocated_nav -= add_balance
             update_unallocated_cash_balance = """
             UPDATE cash_balances
-            SET balance = %s
+            SET balance = %s, nav = %s
             WHERE description = 'Unallocated Capital' AND id=1;
             """
-            cur.execute(update_unallocated_cash_balance, (unallocated_cash_balance,))
+            cur.execute(update_unallocated_cash_balance, (unallocated_cash_balance, unallocated_nav))
 
             # update trader balance
             allocate_trader_balance = """
             UPDATE cash_balances
-            SET balance = balance + %s
+            SET balance = balance + %s, nav = nav + %s, margin_available = margin_available + %s
             WHERE trader_id = %s
             """
-            cur.execute(allocate_trader_balance, (balance, trader_id,))
+            cur.execute(allocate_trader_balance, (add_balance, add_balance, add_balance, trader_id,))
             conn.commit()
     except Exception as e:
         print(e)

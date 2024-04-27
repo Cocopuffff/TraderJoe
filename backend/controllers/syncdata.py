@@ -6,6 +6,7 @@ from backend.utilities import log_info, log_error, log_warning
 from backend.db.db import connect_to_db, connect_to_db_dict_response
 
 load_dotenv()
+leverage = int(os.environ.get('LEVERAGE'))
 oanda_platform = os.environ.get('OANDA_PLATFORM')
 oanda_account = os.environ.get('OANDA_ACCOUNT')
 oanda_API_key = os.environ.get('OANDA_API_KEY')
@@ -63,6 +64,7 @@ def sync_with_oanda():
                 """
                 check_open_trade_response = log_trades_opened(response_data)
                 check_reduced_trade_response = log_trades_reduced(response_data)
+
                 """
                 log_trades_closed returns a dictionary with two key value pairs:
                 updated: True   if successfully logged new trades
@@ -71,12 +73,14 @@ def sync_with_oanda():
                 closed_trades: [{id: id, user_id: user_id, realized_pl: realized_pl, close_time: close_time} ...]
                 """
                 check_closed_trade_response = log_trades_closed(response_data)
+
                 if check_closed_trade_response['updated']:
-                    audit_closed_trade_and_update_trader_nav(check_closed_trade_response['closed_trades'])
+                    audit_closed_trade_and_update_trader_cash_balance(check_closed_trade_response['closed_trades'])
 
                 if check_open_trade_response['updated'] or check_reduced_trade_response['updated'] or check_closed_trade_response['updated']:
                     update_latest_polled_transaction(response_data)
-                update_latest_polled_transaction(response_data)
+                update_trader_nav()
+                update_all_margin_used_and_available()
                 return jsonify({'status': 'ok'}), 200
             except ValueError as e:
                 log_error(f'Invalid JSON response: {response_data}\nerror: {e}')
@@ -314,7 +318,7 @@ def log_trades_closed(response):
             conn.close()
 
 
-def audit_closed_trade_and_update_trader_nav(list_of_closed_trades):
+def audit_closed_trade_and_update_trader_cash_balance(list_of_closed_trades):
     """
     Example parameter data type:
     [{'id': 1, 'user_id': 1, 'realized_pl': Decimal('5.87780'), 'financing': Decimal('-0.13150'), 'close_time': datetime.datetime(2024, 4, 26, 10, 17, 27, 681522, tzinfo=zoneinfo.ZoneInfo(key='Asia/Singapore'))}]
@@ -349,13 +353,13 @@ def audit_closed_trade_and_update_trader_nav(list_of_closed_trades):
                     balance = cur.fetchone()[0]
                     new_balance = balance + net_realized_pl
 
-                    update_trader_nav = """
+                    update_trader_cash = """
                     UPDATE cash_balances
                     SET balance = %s
                     WHERE trader_id = %s
                     """
-                    update_trader_nav_values = (new_balance, user_id)
-                    cur.execute(update_trader_nav, update_trader_nav_values)
+                    update_trader_cash_values = (new_balance, user_id)
+                    cur.execute(update_trader_cash, update_trader_cash_values)
 
             conn.commit()
     except Exception as e:
@@ -368,7 +372,42 @@ def audit_closed_trade_and_update_trader_nav(list_of_closed_trades):
             conn.close()
 
 
+def update_trader_nav():
+    conn = None
+    try:
+        conn = connect_to_db_dict_response()
+        with conn.cursor() as cur:
+            get_unrealized_pl_by_trader = """
+            SELECT user_id, SUM(unrealized_pl) AS sum_of_unrealized_pl
+            FROM trades
+            GROUP BY user_id
+            """
+            cur.execute(get_unrealized_pl_by_trader)
+            results = cur.fetchall()
+            print(results)
+            for result in results:
+                unrealized_pl = result['sum_of_unrealized_pl']
+                user_id = result['user_id']
+                update_nav = """
+                UPDATE cash_balances
+                SET nav = balance + %s
+                WHERE trader_id = %s
+                """
+                values = (unrealized_pl, user_id)
+                cur.execute(update_nav, values)
+            conn.commit()
+    except Exception as e:
+        log_error(f'Something went wrong updating trader nav: {str(e)}')
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
 def update_latest_polled_transaction(response_data):
+    conn = None
     try:
         new_transaction_id = response_data['lastTransactionID']
         conn = connect_to_db()
@@ -377,3 +416,44 @@ def update_latest_polled_transaction(response_data):
             conn.commit()
     except Exception as e:
         log_error(f'Something went wrong updating latest oanda polled transaction: {str(e)}')
+        if conn:
+            conn.rollback()
+            raise
+    finally:
+        if conn:
+            conn.close()
+
+
+def update_all_margin_used_and_available():
+    conn = None
+    try:
+        conn = connect_to_db_dict_response()
+        with conn.cursor() as cur:
+            get_all_margin_used_by_traders = """
+            SELECT user_id, SUM(margin_used)
+            FROM trades
+            WHERE state_id != 3
+            GROUP BY user_id
+            """
+            cur.execute(get_all_margin_used_by_traders)
+            results = cur.fetchall()
+            if results:
+                for result in results:
+                    trader_id = result['user_id']
+                    margin_used = result['margin_used']
+                    update_margin_used_and_available_for_each_trader = """
+                    UPDATE cash_balances
+                    SET margin_used = %s, margin_available = nav - %s
+                    WHERE trader_id = %s
+                    """
+                    values = (margin_used, margin_used, trader_id)
+                    cur.execute(update_margin_used_and_available_for_each_trader, values)
+        conn.commit()
+    except Exception as e:
+        log_error(f'Error in updating margin used and available: {str(e)}')
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if conn:
+            conn.close()

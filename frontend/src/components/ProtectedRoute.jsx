@@ -14,10 +14,14 @@ const ProtectedRoute = (props) => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
       if (refreshToken) {
-        const res = await fetchData("/auth/refresh", "POST", {
-          refresh: refreshToken,
-        });
-
+        console.log(refreshToken);
+        const res = await fetchData(
+          "/auth/refresh/",
+          "POST",
+          undefined,
+          refreshToken
+        );
+        console.log(res);
         if (res.ok) {
           appCtx.setAccessToken(res.data.access);
           const decoded = jwtDecode(res.data.access);

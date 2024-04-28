@@ -5,7 +5,7 @@ import bcrypt
 from backend.utilities import log_info, log_warning, log_error
 from backend.db.db import connect_to_db
 from dotenv import load_dotenv
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, get_jwt
 
 load_dotenv()
 manager_secret_key = os.environ.get('MANAGER_SECRET_KEY')
@@ -39,7 +39,7 @@ def check_password(input_password, db_hash):
         return False
 
 
-def allocate_initial_cash(trader_id, add_balance=1000):
+def allocate_cash(trader_id, add_balance=1000):
     # write sql statement to get unallocated capital
     conn = None
     try:
@@ -74,11 +74,11 @@ def allocate_initial_cash(trader_id, add_balance=1000):
 
             # update trader balance
             allocate_trader_balance = """
-            UPDATE cash_balances
-            SET balance = balance + %s, nav = nav + %s, margin_available = margin_available + %s
-            WHERE trader_id = %s
-            """
-            cur.execute(allocate_trader_balance, (add_balance, add_balance, add_balance, trader_id,))
+                UPDATE cash_balances
+                SET balance = balance + %s, nav = nav + %s, margin_available = margin_available + %s, initial_balance = %s
+                WHERE trader_id = %s
+                """
+            cur.execute(allocate_trader_balance, (add_balance, add_balance, add_balance, add_balance, trader_id,))
             conn.commit()
     except Exception as e:
         print(e)
@@ -139,7 +139,7 @@ def register():
                     INSERT INTO cash_balances (trader_id, balance) VALUES (%s, 0)
                     """
                 conn.execute(initialise_cash_balance, (new_trader_id[0],))
-                allocate_initial_cash(new_trader_id[0])
+                allocate_cash(new_trader_id[0])
             conn.commit()
     except KeyError:
         return jsonify({"status": "error", "msg": "missing parameters in body"}), 400
@@ -197,9 +197,19 @@ def login():
 @auth_bp.post('/refresh/')
 @jwt_required(refresh=True)
 def refresh():
-    identity = get_jwt_identity()
-    access_token = create_access_token(identity=identity, fresh=False)
-    return jsonify({'access_token': access_token})
+    try:
+        identity = get_jwt_identity()
+        claims = get_jwt()
+        access_claims = {
+            'role': claims['role'],
+            'id': identity,
+            'jwt_id': uuid.uuid4()
+        }
+        access_token = create_access_token(identity=identity, fresh=False, additional_claims=access_claims)
+        return jsonify({'access': access_token})
+    except Exception as e:
+        log_error(f'an error has occurred while refreshing token: {e}')
+        return jsonify({'status': 'error', 'msg': 'an error has occurred while refreshing token'}), 200
 
 
 @auth_bp.post('/check-email/')

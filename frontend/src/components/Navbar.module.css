@@ -1,9 +1,16 @@
 .menu a,
-.submenu a {
+.submenu a,
+.dropdown a {
   display: block;
   text-decoration: none;
   color: white;
   line-height: 40px;
+}
+
+.menu a,
+.dropdown a {
+  padding-left: 40px;
+  padding-right: 40px;
 }
 
 .navbar {
@@ -104,13 +111,15 @@
   right: -3px;
   width: auto;
   height: auto;
-  padding: 5px 30px;
+  padding-top: 5px;
+  padding-bottom: 5px;
   display: flex;
   flex-direction: column;
   z-index: 10;
   background-color: var(--navbar-colour);
   border: 3px solid var(--theme-border);
   border-radius: 7px;
+  color: var(--button-hover);
 }
 
 .menu,

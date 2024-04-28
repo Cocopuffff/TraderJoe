@@ -66,30 +66,43 @@ const Navbar = (props) => {
       <div>role: {appCtx.role}</div>
       <div>access exp: {appCtx.expirationDate.toLocaleString()}</div>
       <div className={styles.menu}>
-        <NavLink
-          className={(navData) =>
-            navData.isActive ? `${styles.pages} ${styles.active}` : styles.pages
-          }
-          to="/chart"
-        >
-          Chart
-        </NavLink>
-        <NavLink
-          className={(navData) =>
-            navData.isActive ? `${styles.pages} ${styles.active}` : styles.pages
-          }
-          to="/strategies"
-        >
-          Strategies
-        </NavLink>
-        <NavLink
-          className={(navData) =>
-            navData.isActive ? `${styles.pages} ${styles.active}` : styles.pages
-          }
-          to="/review"
-        >
-          Review
-        </NavLink>
+        {appCtx.role === "Trader" && (
+          <>
+            <NavLink
+              className={(navData) =>
+                navData.isActive
+                  ? `${styles.pages} ${styles.active}`
+                  : styles.pages
+              }
+              to="/chart"
+            >
+              Chart
+            </NavLink>
+            <NavLink
+              className={(navData) =>
+                navData.isActive
+                  ? `${styles.pages} ${styles.active}`
+                  : styles.pages
+              }
+              to="/strategies"
+            >
+              Strategies
+            </NavLink>
+          </>
+        )}
+        {appCtx.role === "Manager" && (
+          <NavLink
+            className={(navData) =>
+              navData.isActive
+                ? `${styles.pages} ${styles.active}`
+                : styles.pages
+            }
+            to="/review"
+          >
+            Review
+          </NavLink>
+        )}
+
         <div
           className={styles.account}
           onClick={() => setViewAccountActions(!viewAccountActions)}
@@ -97,29 +110,35 @@ const Navbar = (props) => {
           <AccountCircleRoundedIcon />
           {viewAccountActions && (
             <div className={styles.dropdown}>
-              <NavLink
-                className={(navData) =>
-                  navData.isActive
-                    ? `${styles.pages} ${styles.active}`
-                    : styles.pages
-                }
-                to="/login"
-              >
-                Login
-              </NavLink>
-              <NavLink
-                className={(navData) =>
-                  navData.isActive
-                    ? `${styles.pages} ${styles.active}`
-                    : styles.pages
-                }
-                to="/register"
-              >
-                Register
-              </NavLink>
-              <NavLink to="/" onClick={appCtx.logOut}>
-                Log out
-              </NavLink>
+              {!appCtx.accessToken && (
+                <>
+                  <NavLink
+                    className={(navData) =>
+                      navData.isActive
+                        ? `${styles.pages} ${styles.active}`
+                        : styles.pages
+                    }
+                    to="/login"
+                  >
+                    Login
+                  </NavLink>
+                  <NavLink
+                    className={(navData) =>
+                      navData.isActive
+                        ? `${styles.pages} ${styles.active}`
+                        : styles.pages
+                    }
+                    to="/register"
+                  >
+                    Register
+                  </NavLink>
+                </>
+              )}
+              {appCtx.accessToken && (
+                <NavLink to="/" onClick={appCtx.logOut}>
+                  Logout
+                </NavLink>
+              )}
             </div>
           )}
         </div>

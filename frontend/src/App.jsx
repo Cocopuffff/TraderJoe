@@ -4,6 +4,7 @@ import ErrorModal from "./components/ErrorModal";
 import { Route, Routes } from "react-router-dom";
 import Loader from "./components/Loader";
 import Navbar from "./components/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
 const HomePage = React.lazy(() => import("./pages/HomePage"));
@@ -101,12 +102,28 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
-          <Route path="review" element={<ReviewTraders />} />
-          <Route path="strategies" element={<ManageStrategy />} />
+          <Route
+            path="review"
+            element={
+              <ProtectedRoute requiredRole="Manager">
+                <ReviewTraders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="strategies"
+            element={
+              <ProtectedRoute requiredRole="Trader">
+                <ManageStrategy />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="chart"
             element={
-              <DisplayChart selectedTimeFrame={selectedTimeFrame.name} />
+              <ProtectedRoute requiredRole="Trader">
+                <DisplayChart selectedTimeFrame={selectedTimeFrame.name} />
+              </ProtectedRoute>
             }
           />
           <Route path="*" element={<NotFound />} />

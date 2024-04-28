@@ -133,14 +133,14 @@ def register():
             cur.execute(register_user, (display_name, hashed, email, role_id))
 
             new_trader_id = cur.fetchone()
-            print(new_trader_id[0])
-            initialise_cash_balance = """
-            INSERT INTO cash_balances (trader_id, balance) VALUES (%s, 0)
-            """
-            conn.execute(initialise_cash_balance, (new_trader_id[0],))
-            conn.commit()
+
             if role_id == 1:
+                initialise_cash_balance = """
+                            INSERT INTO cash_balances (trader_id, balance) VALUES (%s, 0)
+                            """
+                conn.execute(initialise_cash_balance, (new_trader_id[0],))
                 allocate_initial_cash(new_trader_id[0])
+            conn.commit()
     except KeyError:
         return jsonify({"status": "error", "msg": "missing parameters in body"}), 400
     except Exception as e:

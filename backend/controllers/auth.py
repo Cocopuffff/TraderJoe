@@ -125,12 +125,15 @@ def register():
                 return jsonify("invalid role"), 400
             role_id = role_result[0]
             hashed = hash_password(password)
+            can_trade = False
+            if role_id == 1:
+                can_trade = True
             register_user = f"""
-            INSERT INTO auth(display_name, password_hash, email, role_id) VALUES
+            INSERT INTO auth(display_name, password_hash, email, role_id, can_trade) VALUES
             (%s, %s, %s, %s)
             RETURNING id
             """
-            cur.execute(register_user, (display_name, hashed, email, role_id))
+            cur.execute(register_user, (display_name, hashed, email, role_id, can_trade))
 
             new_trader_id = cur.fetchone()
 

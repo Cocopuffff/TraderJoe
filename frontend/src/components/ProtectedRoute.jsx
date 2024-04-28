@@ -14,14 +14,13 @@ const ProtectedRoute = (props) => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
       if (refreshToken) {
-        console.log(refreshToken);
         const res = await fetchData(
           "/auth/refresh/",
           "POST",
           undefined,
           refreshToken
         );
-        console.log(res);
+
         if (res.ok) {
           appCtx.setAccessToken(res.data.access);
           const decoded = jwtDecode(res.data.access);
@@ -82,11 +81,13 @@ const ProtectedRoute = (props) => {
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(
-      checkAndRefreshToken,
-      appCtx.expirationDate - Date.now() - 30 * 1000
-    );
-
+    let timer = null;
+    if (appCtx.expirationDate) {
+      const timer = setInterval(
+        checkAndRefreshToken,
+        appCtx.expirationDate - Date.now() - 30 * 1000
+      );
+    }
     return () => {
       clearInterval(timer);
     };

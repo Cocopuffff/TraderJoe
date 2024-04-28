@@ -1,12 +1,12 @@
-from flask import Flask, Blueprint, request, jsonify, render_template
+from flask import Flask, Blueprint, request, jsonify
 from dotenv import load_dotenv
 import os
 from datetime import timedelta
-from backend.view import data as website_data
 from backend.controllers import watchlist, auth, strategy, syncdata, order, tradesmenu, review
-from backend.view import data as website_data
+from backend.utilities import log_error
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from werkzeug.exceptions import BadRequest
 
 
 def create_app():
@@ -18,7 +18,7 @@ def create_app():
             "Content-Type", "Authorization", "Access-Control-Allow-Credentials"
         ],
         "supports_credentials": True,
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
     }})
 
     app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY')
@@ -39,23 +39,23 @@ def create_app():
     SCRIPT_FOLDER = os.path.join(app.root_path, 'scripts')
     os.makedirs(SCRIPT_FOLDER, exist_ok=True)
 
-    @app.route('/')
-    def index():
-        data = website_data.get_index_data()
-        return render_template('index.html', **data)
+    @app.errorhandler(BadRequest)
+    def handle_bad_request(e):
+        if 'Failed to decode JSON object' in str(e):
+            return jsonify({'status': 'error', 'msg': 'An error has occurred'}), 400
+        return jsonify({'status': 'error', 'msg': 'Bad request'}), 400
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        log_error(f'Server Error: {e}')
+        return jsonify({'status': 'error', 'msg': 'An error has occurred'}), 500
 
     return app
-
-# def start_app():
-#     app = create_app()
 
 
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True, port=5001)
-
-    # print(f'Hello, World! Your secret key is {app.config['SECRET_KEY']}')
-    # app.run(debug=True, port=port)
 
 # Run the following in terminal:
 # pipenv shell

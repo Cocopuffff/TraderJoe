@@ -163,23 +163,25 @@ def login():
         conn = connect_to_db()
         with conn.cursor() as cur:
             get_hash = """
-            SELECT auth.id AS user_id, auth.password_hash, user_roles.role_name AS role_name
+            SELECT auth.id AS user_id, auth.password_hash, user_roles.role_name AS role_name, auth.display_name AS display_name
             FROM auth
             JOIN user_roles
             ON user_roles.role_id = auth.role_id
             WHERE email = %s
             """
             cur.execute(get_hash, (email,))
-            [user_id, password_hash, role_name] = cur.fetchone()
+            [user_id, password_hash, role_name, display_name] = cur.fetchone()
         if check_password(input_password, password_hash):
             access_claims = {
                 'role': role_name,
                 'id': user_id,
+                'name': display_name,
                 'jwt_id': uuid.uuid4()
             }
             refresh_claims = {
                 'role': role_name,
                 'id': user_id,
+                'name': display_name,
                 'jwt_id': uuid.uuid4()
             }
 
@@ -206,6 +208,7 @@ def refresh():
         access_claims = {
             'role': claims['role'],
             'id': identity,
+            'name': claims['display_name'],
             'jwt_id': uuid.uuid4()
         }
         access_token = create_access_token(identity=identity, fresh=False, additional_claims=access_claims)

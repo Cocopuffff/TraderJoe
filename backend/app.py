@@ -7,6 +7,7 @@ from backend.utilities import log_error
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from werkzeug.exceptions import BadRequest
+from werkzeug.utils import secure_filename
 
 
 def create_app():
@@ -21,6 +22,10 @@ def create_app():
         "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
     }})
 
+    # Create / define directory to store python strategy scripts
+    app.config['SCRIPT_FOLDER'] = os.path.join(app.root_path, 'scripts')
+    os.makedirs(app.config['SCRIPT_FOLDER'], exist_ok=True)
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
     app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET_KEY')
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
     app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
@@ -35,9 +40,6 @@ def create_app():
     app.register_blueprint(tradesmenu.trades_menu_bp)
     app.register_blueprint(review.review_trader_bp)
 
-    # Create / define directory to store python strategy scripts
-    SCRIPT_FOLDER = os.path.join(app.root_path, 'scripts')
-    os.makedirs(SCRIPT_FOLDER, exist_ok=True)
 
     @app.errorhandler(BadRequest)
     def handle_bad_request(e):

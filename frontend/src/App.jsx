@@ -54,6 +54,7 @@ function App() {
   const [email, setEmail] = useState("");
   const [expirationDate, setExpirationDate] = useState("");
   const [showLogin, setShowLogin] = useState(true);
+  const [displayName, setDisplayName] = useState("");
 
   const handleDismiss = () => {
     setIsError(false);
@@ -90,6 +91,8 @@ function App() {
           setShowLogin,
           email,
           setEmail,
+          displayName,
+          setDisplayName,
           logOut,
         }}
       >

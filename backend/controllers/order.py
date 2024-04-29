@@ -1,9 +1,9 @@
 from flask import Blueprint, request, jsonify
 from dotenv import load_dotenv
-import os, requests, datetime
+import os, requests
 from flask_jwt_extended import jwt_required, get_jwt
 from backend.utilities import log_info, log_error, log_warning
-from backend.db.db import connect_to_db, connect_to_db_dict_response
+from backend.db.db import connect_to_db
 
 load_dotenv()
 oanda_platform = os.environ.get('OANDA_PLATFORM')
@@ -17,27 +17,43 @@ order_bp = Blueprint('order', __name__, url_prefix='/api/order')
 @jwt_required()
 def create_market_order_oanda():
     try:
+        claims = get_jwt()
+        trader_id = claims['id']
+        data = request.json
+        try:
+            instrument = data['instrument']
+            stop_loss_price = data['stop_loss_price']
+            take_profit_price = data['take_profit_price']
+            units = data['units']
+        except KeyError as e:
+            log_error(f'missing key parameters: {e}')
+            return jsonify({'status': 'error', 'msg': 'missing key parameters'}), 400
+        try:
+            stop_loss_price = float(stop_loss_price)
+            take_profit_price = float(take_profit_price)
+            units = float(units)
+        except ValueError:
+            log_error(f'parameters needs to be valid floating numbers'), 400
+            return jsonify({'status': 'error', 'msg': 'parameters needs to be valid floating numbers'}), 400
+        if not isinstance(instrument, (str,)):
+            log_error(f'instrument parameter has to be a string'), 400
+            return jsonify({'status': 'error', 'msg': 'instrument parameter has to be a string'}), 400
         endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/orders"
         headers = {'Authorization': f'Bearer {oanda_API_key}', 'Connection': 'keep-alive'}
         data = {
             'order': {
                 'stopLossOnFill': {
                     'timeInForce': "GTC",
-                    'price': "155.00000",
+                    'price': stop_loss_price,
                 },
                 'takeProfitOnFill': {
-                    'price': "157.00000",
+                    'price': take_profit_price,
                 },
                 'timeInForce': "FOK",
-                'instrument': "USD_JPY",
-                'units': "1000",
+                'instrument': instrument,
+                'units': units,
                 'type': "MARKET",
                 'positionFill': "DEFAULT",
-                'clientExtensions': {
-                    'comment': "trader_1",
-                    'tag': "strategy_1",
-                    'id': "my_order_1",
-                },
             },
         }
         response = requests.post(endpoint, headers=headers, json=data)
@@ -46,9 +62,24 @@ def create_market_order_oanda():
         if response.status_code == 201:
             try:
                 response_data = response.json()
-                trade_id = response_data['orderFillTransaction']['id']
-                add_client_extensions_to_trade(trade_id)
-                return jsonify({'status': 'ok', 'msg': 'order created'}), 201
+                # check if order is filled
+                try:
+                    trade_id = response_data['orderFillTransaction']['id']
+                    add_client_extensions_to_trade(trade_id)
+                    return jsonify({'status': 'ok', 'msg': 'order filled'}), 201
+                except KeyError:
+                    log_info(f"no order filled yet for: {response_data}")
+                # else, check if order is created and log it
+                try:
+                    order_id = response_data['orderCreateTransaction']['id']
+                    conn = connect_to_db()
+                    with conn.cursor() as cur:
+                        insert_unfilled_order = """INSERT INTO orders (trader_id, order_id) VALUES (%s, %s)"""
+                        cur.execute(insert_unfilled_order, (trader_id, order_id))
+                    return jsonify({'status': 'ok', 'msg': 'order created'}), 201
+                except Exception as e:
+                    log_error(f"an error has occurred for {response_data}: {str(e)}")
+                return jsonify({'status': 'error', 'message': 'An unexpected error has occurred'}), 500
             except ValueError as e:
                 log_error(f'Invalid JSON response: {response_data}\nerror: {e}')
                 return jsonify({'status': 'error', 'message': 'Invalid JSON response'}), 500

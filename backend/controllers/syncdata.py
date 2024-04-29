@@ -73,7 +73,7 @@ def sync_with_oanda():
                 closed_trades: [{id: id, user_id: user_id, realized_pl: realized_pl, close_time: close_time} ...]
                 """
                 check_closed_trade_response = log_trades_closed(response_data)
-
+                tie_order_to_trade(response_data)
                 if check_closed_trade_response['updated']:
                     audit_closed_trade_and_update_trader_cash_balance(check_closed_trade_response['closed_trades'])
 
@@ -313,6 +313,41 @@ def log_trades_closed(response):
         if conn:
             conn.rollback()
         raise
+    finally:
+        if conn:
+            conn.close()
+
+
+def tie_order_to_trade(response):
+    conn = None
+    try:
+        orders_filled = response['changes']['ordersFilled']
+        orders_cancelled = response['changes']['ordersCancelled']
+        conn = connect_to_db_dict_response()
+
+        for order in orders_filled:
+            if order['type'] == 'MARKET' and order['state'] == 'FILLED':
+                order_id = order['id']
+                with conn.cursor() as cur:
+                    cur.execute("SELECT trader_id FROM orders WHERE order_id = %s", (order_id,))
+                    trader_id = cur.fetchone()
+                    if trader_id:
+                        trader_id = trader_id[0]
+                        trade_id = order['tradeOpenedID']
+                        cur.execute("UPDATE trades SET user_id = %s WHERE transaction_id = %s", (trader_id, trade_id))
+                        cur.execute("UPDATE orders SET completed = TRUE WHERE order_id = %s", (order_id,))
+        for order in orders_cancelled:
+            if order['type'] == 'MARKET':
+                order_id = order['id']
+                with conn.cursor() as cur:
+                    cur.execute("UPDATE orders SET completed = TRUE WHERE order_id = %s", (order_id,))
+    except KeyError:
+        log_error("JSON structure unexpected")
+        raise
+    except Exception as e:
+        log_error(f"An error has occurred: {str(e)}")
+        if conn:
+            conn.rollback()
     finally:
         if conn:
             conn.close()

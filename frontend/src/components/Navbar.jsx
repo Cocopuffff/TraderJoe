@@ -62,9 +62,6 @@ const Navbar = (props) => {
           </div>
         )}
       </div>
-      <div>id: {appCtx.id}</div>
-      <div>role: {appCtx.role}</div>
-      <div>access exp: {appCtx.expirationDate.toLocaleString()}</div>
       <div className={styles.menu}>
         {appCtx.role === "Trader" && (
           <>
@@ -104,7 +101,11 @@ const Navbar = (props) => {
         )}
 
         <div
-          className={styles.account}
+          className={
+            appCtx.accessToken
+              ? `${styles.account} ${styles.loggedin}`
+              : `${styles.account}`
+          }
           onClick={() => setViewAccountActions(!viewAccountActions)}
         >
           <AccountCircleRoundedIcon />

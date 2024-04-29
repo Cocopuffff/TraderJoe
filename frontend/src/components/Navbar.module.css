@@ -150,3 +150,7 @@
 .submenu .active {
   color: var(--selected);
 }
+
+.loggedin {
+  color: var(--selected);
+}

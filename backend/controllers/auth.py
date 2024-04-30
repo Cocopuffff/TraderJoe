@@ -208,7 +208,7 @@ def refresh():
         access_claims = {
             'role': claims['role'],
             'id': identity,
-            'name': claims['display_name'],
+            'name': claims['name'],
             'jwt_id': uuid.uuid4()
         }
         access_token = create_access_token(identity=identity, fresh=False, additional_claims=access_claims)

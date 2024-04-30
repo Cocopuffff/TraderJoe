@@ -1,0 +1,46 @@
+.rows {
+  margin-left: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--theme-border);
+}
+
+.input {
+  background-color: var(--bs-gray-100);
+  margin-top: 10px;
+  margin-bottom: 10px;
+  min-height: 2rem;
+}
+
+.upColour {
+  color: var(--up-colour);
+}
+
+.downColour {
+  color: var(--down-colour);
+}
+
+.buttonBad,
+.buttonGood {
+  border: none;
+  border-radius: 5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  line-height: 2rem;
+}
+
+.buttonBad {
+  background-color: var(--down-colour);
+}
+
+.buttonGood {
+  background-color: var(--up-colour);
+}
+.buttonBad:hover,
+.buttonGood:hover {
+  color: #fff;
+}

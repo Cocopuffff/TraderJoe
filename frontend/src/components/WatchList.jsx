@@ -137,7 +137,7 @@ const WatchList = (props) => {
   };
 
   const handleSelect = (id) => {
-    const selectedInstrument = instruments.watchlist.filter(
+    const selectedInstrument = instruments.filter(
       (record) => record.id === id
     )[0];
     props.setSelectedInstrument(selectedInstrument);

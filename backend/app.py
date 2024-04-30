@@ -7,7 +7,7 @@ from backend.utilities import log_error
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from werkzeug.exceptions import BadRequest
-from werkzeug.utils import secure_filename
+from backend.db.db import connect_to_db
 
 
 def create_app():
@@ -40,7 +40,6 @@ def create_app():
     app.register_blueprint(tradesmenu.trades_menu_bp)
     app.register_blueprint(review.review_trader_bp)
 
-
     @app.errorhandler(BadRequest)
     def handle_bad_request(e):
         if 'Failed to decode JSON object' in str(e):
@@ -51,6 +50,12 @@ def create_app():
     def handle_exception(e):
         log_error(f'Server Error: {e}')
         return jsonify({'status': 'error', 'msg': 'An error has occurred'}), 500
+
+    conn = connect_to_db()
+    with conn.cursor() as cur:
+        cur.execute("UPDATE active_strategies_trades SET is_active = FALSE")
+        conn.commit()
+    conn.close()
 
     return app
 

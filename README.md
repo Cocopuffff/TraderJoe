@@ -5,3 +5,10 @@
 -How to use python requests library: https://www.w3schools.com/python/ref_requests_response.asp
 -How to upload python files to Flask: https://flask.palletsprojects.com/en/2.3.x/patterns/fileuploads/
 -How to upload python files from React: https://uploadcare.com/blog/how-to-upload-file-in-react/
+-How to start and close threads for trading scripts: https://www.geeksforgeeks.org/start-and-stop-a-thread-in-python/
+
+## Deliverables
+codes (by 9:30 Fri)
+README (by 17:00 Sat)
+env variables
+SQL create tables file

@@ -4,6 +4,7 @@ import os, requests, datetime
 from flask_jwt_extended import jwt_required, get_jwt
 from backend.utilities import log_info, log_error, log_warning
 from backend.db.db import connect_to_db, connect_to_db_dict_response
+from decimal import Decimal
 
 load_dotenv()
 leverage = int(os.environ.get('LEVERAGE'))
@@ -74,6 +75,7 @@ def sync_with_oanda():
                 """
                 check_closed_trade_response = log_trades_closed(response_data)
                 tie_order_to_trade(response_data)
+                update_open_trade(response_data)
                 if check_closed_trade_response['updated']:
                     audit_closed_trade_and_update_trader_cash_balance(check_closed_trade_response['closed_trades'])
 
@@ -289,12 +291,12 @@ def log_trades_closed(response):
                 else:
                     insert_new_trade = """
                     INSERT INTO trades (user_id, open_time, close_time, current_units, financing, transaction_id, initial_units, instrument, price, realized_pl, unrealized_pl, state_id, margin_used)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id, user_id, realized_pl, close_time
                     """
                     values = (
                     user_id, open_time, close_time, current_units, financing, transaction_id, initial_units, instrument, price,
-                    realized_pl, state_id, margin_used)
+                    realized_pl, unrealized_pl, state_id, margin_used)
                     cur.execute(insert_new_trade, values)
                     closed_trade_info_dictionary = cur.fetchone()
                     list_of_closed_trades.append(closed_trade_info_dictionary)
@@ -365,7 +367,7 @@ def audit_closed_trade_and_update_trader_cash_balance(list_of_closed_trades):
             for closed_trades in list_of_closed_trades:
                 trade_id = closed_trades['id']
                 user_id = closed_trades['user_id']
-                net_realized_pl = closed_trades['realized_pl'] + closed_trades['financing']
+                net_realized_pl = closed_trades['realized_pl'] + closed_trades.get('financing', Decimal('0.00'))
                 close_time = closed_trades['close_time']
 
                 find_existing_trade = """SELECT * FROM trade_audit WHERE trade_id = %s"""
@@ -402,6 +404,34 @@ def audit_closed_trade_and_update_trader_cash_balance(list_of_closed_trades):
         if conn:
             conn.rollback()
         raise
+    finally:
+        if conn:
+            conn.close()
+
+
+def update_open_trade(response):
+    conn = None
+    try:
+        open_trades = response['state']['trades']
+        conn = connect_to_db_dict_response()
+        for order in open_trades:
+            print(order)
+            unrealized_pl = order['unrealizedPL']
+            margin_used = order['marginUsed']
+            transaction_id = order['id']
+            with conn.cursor() as cur:
+                update_trade = """
+                UPDATE trades SET unrealized_pl = %s, margin_used = %s WHERE id = %s
+                RETURNING unrealized_pl, margin_used
+                """
+                cur.execute(update_trade, (unrealized_pl, margin_used, transaction_id))
+                result = cur.fetchone()
+                print(result)
+                conn.commit()
+    except Exception as e:
+        log_error(f"error occurred updating open trades: {str(e)}")
+        if conn:
+            conn.rollback()
     finally:
         if conn:
             conn.close()
@@ -475,7 +505,7 @@ def update_all_margin_used_and_available():
             if results:
                 for result in results:
                     trader_id = result['user_id']
-                    margin_used = result['margin_used']
+                    margin_used = result.get('margin_used', Decimal('0.00'))
                     update_margin_used_and_available_for_each_trader = """
                     UPDATE cash_balances
                     SET margin_used = %s, margin_available = nav - %s

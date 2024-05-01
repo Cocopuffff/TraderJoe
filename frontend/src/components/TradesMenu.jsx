@@ -3,6 +3,7 @@ import styles from "./TradesMenu.module.css";
 import TradesNavbar from "./TradesNavbar";
 import History from "./History";
 import AccountSummary from "./AccountSummary";
+import Position from "./Position";
 
 const TradesMenu = (props) => {
   const [active, setActive] = useState(null);
@@ -15,7 +16,7 @@ const TradesMenu = (props) => {
         active={active}
         setActive={setActive}
       />
-      {active === "positions" && <div>position</div>}
+      {active === "positions" && <Position />}
       {active === "summary" && <AccountSummary />}
       {active === "history" && <History />}
       {active === "strategies" && <div>strategies</div>}

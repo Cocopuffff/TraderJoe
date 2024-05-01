@@ -218,35 +218,6 @@ def stop_strategy():
         return jsonify({'status': 'error', 'msg': 'An error has occurred in stopping strategy'}), 500
 
 
-@strategy_bp.get("/positions/")
-@jwt_required()
-def get_positions_by_user():
-    try:
-        claims = get_jwt()
-        user_id = claims['id']
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return jsonify({'status': 'error', 'msg': 'ID must be a positive integer'}), 400
-        conn = connect_to_db_dict_response()
-        with conn.cursor() as cur:
-            get_positions_by_user = """
-                SELECT s.name AS strategy_name, a.instrument AS instrument, t.unrealized_pl AS unrealized_pl, t.current_units AS units, t.transaction_id AS id
-                FROM active_strategies_trades a
-                JOIN strategies s
-                ON a.strategy_id = s.id
-                JOIN trades t
-                ON t.id = a.trade_id
-                WHERE a.user_id = %s AND t.state_id = 1;
-                """
-            cur.execute(get_positions_by_user, (user_id,))
-            positions = cur.fetchall()
-        return jsonify({'positions': positions}), 200
-    except Exception as e:
-        log_error(f'An error has occurred: {str(e)}')
-        return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500
-
-
 @strategy_bp.get("/")
 @jwt_required()
 def get_strategies_by_user():

@@ -214,7 +214,6 @@ const ReviewTraders = () => {
                       className={styles.buttonBad}
                     >
                       Suspend
-                      {/* <StopIcon /> */}
                     </button>
                   ) : (
                     <button
@@ -223,7 +222,6 @@ const ReviewTraders = () => {
                       className={styles.buttonGood}
                     >
                       Activate
-                      {/* <StopIcon /> */}
                     </button>
                   )}
                   <button
@@ -232,7 +230,6 @@ const ReviewTraders = () => {
                     className={styles.buttonBad}
                   >
                     Fire
-                    {/* <PersonRemoveIcon /> */}
                   </button>
                 </div>
               </div>

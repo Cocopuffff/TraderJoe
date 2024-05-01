@@ -1,6 +1,6 @@
 .container {
   height: calc(100% - 50px - 50px);
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   overflow-y: scroll;
 }
 
@@ -23,4 +23,8 @@
 
 .downColour {
   color: var(--down-colour);
+}
+
+.longColour {
+  color: var(--selected);
 }

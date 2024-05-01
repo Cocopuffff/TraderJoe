@@ -172,25 +172,32 @@ const ManageStrategy = () => {
         {addStrategy && (
           <div className={`row ${styles.rows}`}>
             <div className="col-md-1" id={appCtx.id}></div>
-            <input
-              className={`col-md-2 ${styles.input}`}
-              id="name"
-              value={name}
-              onChange={handleChange}
-            ></input>
-            <select
-              className={`col-md-2 ${styles.input}`}
-              id="type"
-              value={type}
-              onChange={handleChange}
-            >
-              {strategyTypes &&
-                strategyTypes.map((item, idx) => (
-                  <option key={idx} value={item}>
-                    {item}
-                  </option>
-                ))}
-            </select>
+            <div className="col-md-2">
+              <div className="row">
+                <input
+                  className={styles.input}
+                  id="name"
+                  value={name}
+                  onChange={handleChange}
+                ></input>
+              </div>
+            </div>
+            <div className="col-md-2">
+              <select
+                className={styles.input}
+                id="type"
+                value={type}
+                onChange={handleChange}
+              >
+                {strategyTypes &&
+                  strategyTypes.map((item, idx) => (
+                    <option key={idx} value={item}>
+                      {item}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
             <textarea
               className={`col-md-3 ${styles.input}`}
               id="comments"

@@ -106,3 +106,35 @@ def get_positions_by_user():
     except Exception as e:
         log_error(f'An error has occurred: {str(e)}')
         return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500
+
+
+@trades_menu_bp.get("/strategies/")
+@jwt_required()
+def list_active_strategies_by_user():
+    try:
+        claims = get_jwt()
+        user_id = claims['id']
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return jsonify({'status': 'error', 'msg': 'ID must be a positive integer'}), 400
+        conn = connect_to_db_dict_response()
+        with conn.cursor() as cur:
+            get_strategies_by_user = """
+                SELECT a.id as id, s.name AS strategy_name, a.instrument AS instrument, t.initial_units AS initial_units, 
+                t.current_units AS units, t.transaction_id AS trade_id, a.is_active as is_active
+                FROM active_strategies_trades a
+                JOIN strategies s
+                ON a.strategy_id = s.id
+                JOIN trades t
+                ON t.id = a.trade_id
+                JOIN instruments i
+                ON a.instrument = i.name
+                WHERE a.user_id = %s;
+                """
+            cur.execute(get_strategies_by_user, (user_id,))
+            strategy_instrument_trade = cur.fetchall()
+        return jsonify({'strategy_instrument_trade': strategy_instrument_trade}), 200
+    except Exception as e:
+        log_error(f'An error has occurred: {str(e)}')
+        return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500

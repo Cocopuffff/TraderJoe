@@ -48,7 +48,9 @@ const History = () => {
                 }).format(new Date(trade.close_time))}
               </div>
               <div className="col">{trade.instrument}</div>
-              <div className="col">{trade.initial_units}</div>
+              <div className="col">
+                {Number(trade.initial_units).toFixed(0)}
+              </div>
               <div className="col">
                 {trade.initial_units > 0 ? "Long" : "Short"}
               </div>

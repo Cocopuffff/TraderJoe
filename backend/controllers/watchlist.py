@@ -114,3 +114,25 @@ def add_instrument_to_watchlist():
     finally:
         if conn:
             conn.close()
+
+
+@watchlist_bp.get('/all/')
+@jwt_required()
+def get_available_instrument():
+    try:
+        claims = get_jwt()
+        user_id = claims['id']
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            get_watchlist = """
+            SELECT name, display_name
+            FROM instruments
+            """
+            cur.execute(get_watchlist)
+            items = cur.fetchall()
+            results = [{'name': item[0], 'display_name': item[1]} for item in items]
+            return jsonify({'instruments': results})
+    except Exception as e:
+        error_message = str(e)
+        log_error(error_message)
+        return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500

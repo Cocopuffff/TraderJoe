@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import styles from "./History.module.css";
+import styles from "./Position.module.css";
 import useFetch from "../hooks/useFetch";
 import AppContext from "../context/AppContext";
 
@@ -42,7 +42,13 @@ const Position = () => {
               <div className="col">{trade.strategy_name}</div>
               <div className="col">{trade.instrument}</div>
               <div className="col">{Number(trade.units).toFixed(0)}</div>
-              <div className="col">{trade.units > 0 ? "Long" : "Short"}</div>
+              <div
+                className={`col ${
+                  trade.units > 0 ? styles.longColour : styles.downColour
+                }`}
+              >
+                {trade.units > 0 ? "Long" : "Short"}
+              </div>
               <div
                 className={`col ${
                   trade.unrealized_pl >= 0 ? styles.upColour : styles.downColour

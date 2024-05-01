@@ -1,0 +1,69 @@
+.container {
+  height: calc(100% - 50px - 50px);
+  font-size: 0.8rem;
+  overflow-y: scroll;
+}
+
+.subheader {
+  height: 3rem;
+  color: var(--subheader-colour);
+  display: flex;
+  align-items: center;
+}
+
+.rows {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border-top: 1px solid var(--list-border);
+}
+
+.upColour {
+  color: var(--up-colour);
+}
+
+.downColour {
+  color: var(--down-colour);
+}
+
+.longColour {
+  color: var(--selected);
+}
+
+.deleteButton {
+  background-color: transparent;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+}
+
+.deleteButton:hover {
+  background-color: var(--button-hover);
+}
+
+.buttonGood {
+  border: none;
+  border-radius: 5px;
+  display: block;
+  justify-content: center;
+  align-items: center;
+  line-height: 2rem;
+  background-color: var(--up-colour);
+}
+
+.buttonGood:hover {
+  color: white;
+}
+
+.inputWrapper {
+  padding-top: 50px;
+}
+
+.input {
+  background-color: var(--bs-gray-100);
+  min-height: 2rem;
+  border: 1px solid var(--selected);
+  border-radius: 5px;
+  max-width: 90%;
+  display: block;
+  margin: 0 auto;
+}

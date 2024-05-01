@@ -24,20 +24,43 @@ def create_market_order_oanda():
             instrument = data['instrument']
             stop_loss_price = data['stop_loss_price']
             take_profit_price = data['take_profit_price']
+            abs_script_path = data['script_path']
             units = data['units']
+            print(data)
         except KeyError as e:
             log_error(f'missing key parameters: {e}')
             return jsonify({'status': 'error', 'msg': 'missing key parameters'}), 400
         try:
-            stop_loss_price = float(stop_loss_price)
-            take_profit_price = float(take_profit_price)
-            units = float(units)
+            if 'JPY' in instrument:
+                stop_loss_price = f'{float(stop_loss_price):.2f}'
+                take_profit_price = f'{float(take_profit_price):.2f}'
+            else:
+                stop_loss_price = f'{float(stop_loss_price):.5f}'
+                take_profit_price = f'{float(take_profit_price):.5f}'
+            units = int(units)
         except ValueError:
-            log_error(f'parameters needs to be valid floating numbers'), 400
-            return jsonify({'status': 'error', 'msg': 'parameters needs to be valid floating numbers'}), 400
+            log_error(f'parameters needs to be valid numbers'), 400
+            return jsonify({'status': 'error', 'msg': 'parameters needs to be valid numbers'}), 400
         if not isinstance(instrument, (str,)):
             log_error(f'instrument parameter has to be a string'), 400
             return jsonify({'status': 'error', 'msg': 'instrument parameter has to be a string'}), 400
+
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            get_script_path_by_trader = """
+            SELECT id, script_path FROM strategies WHERE owner_id = %s"""
+            cur.execute(get_script_path_by_trader, (trader_id,))
+            strategies = cur.fetchall()
+            matching_strategy_id = None
+            if strategies:
+                for strategy in strategies:
+                    print(strategy)
+                    if strategy[1] in abs_script_path:
+                        matching_strategy_id = strategy[0]
+                        print('found strategy!')
+                        break
+            if not matching_strategy_id:
+                return jsonify({'status': 'error', 'msg': 'matching strategy not found'}), 404
         endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/orders"
         headers = {'Authorization': f'Bearer {oanda_API_key}', 'Connection': 'keep-alive'}
         data = {
@@ -54,6 +77,10 @@ def create_market_order_oanda():
                 'units': units,
                 'type': "MARKET",
                 'positionFill': "DEFAULT",
+                "clientExtensions": {
+                    'tag': f'trader_{trader_id}',
+                    'comment': f'strategy_{matching_strategy_id}'
+                }
             },
         }
         response = requests.post(endpoint, headers=headers, json=data)
@@ -62,10 +89,11 @@ def create_market_order_oanda():
         if response.status_code == 201:
             try:
                 response_data = response.json()
+                log_info(response_data)
+                print(response_data)
                 # check if order is filled
                 try:
                     trade_id = response_data['orderFillTransaction']['id']
-                    add_client_extensions_to_trade(trade_id)
                     return jsonify({'status': 'ok', 'msg': 'order filled'}), 201
                 except KeyError:
                     log_info(f"no order filled yet for: {response_data}")
@@ -86,31 +114,6 @@ def create_market_order_oanda():
         else:
             log_error(f'Failed to create order: {response.status_code} {response.text}')
             return jsonify({'status code': response.status_code, 'msg': response.text})
-    except Exception as e:
-        log_error(f'Unexpected error: {str(e)}')
-        return jsonify({'status': 'error', 'message': 'An unexpected error has occurred'}), 500
-
-
-@order_bp.post('/oanda/updateClientExtensions')
-@jwt_required()
-def add_client_extensions_to_trade(trade_id):
-    try:
-        endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/trades/{trade_id}/clientExtensions"
-        headers = {'Authorization': f'Bearer {oanda_API_key}', 'Connection': 'keep-alive'}
-        data = {
-            'clientExtensions': {
-                'comment': "trader_1",
-                'tag': "strategy_1",
-                'id': "my_order_1",
-            },
-        }
-        response = requests.put(endpoint, headers=headers, json=data)
-        # capture response data
-        if response.status_code == 200:
-            return jsonify({'status': 'ok', 'msg': 'order created, filled and corresponding trade client extensions updated'}), 201
-        else:
-            log_error(f'Failed to update client extensions for trade 18: {response.status_code} {response.text}')
-            return jsonify({'status code': response.status_code, 'msg': f'order created but failed to update client extensions for trade 18: {response.text}'})
     except Exception as e:
         log_error(f'Unexpected error: {str(e)}')
         return jsonify({'status': 'error', 'message': 'An unexpected error has occurred'}), 500

@@ -7,6 +7,7 @@ from backend.utilities import log_info, log_error, log_warning
 from backend.db.db import connect_to_db, connect_to_db_dict_response
 from werkzeug.utils import secure_filename
 import threading
+from subprocess import Popen
 
 strategy_bp = Blueprint('strategy', __name__, url_prefix='/api/strategy')
 ALLOWED_EXTENSIONS = ['py']
@@ -18,7 +19,7 @@ def allowed_file(filename):
 
 # Dictionary to hold information of running threads for trading scripts
 threads = {}
-
+processes= {}
 
 @strategy_bp.put("/create/")
 @jwt_required()
@@ -82,9 +83,18 @@ def create_strategy():
             conn.close()
 
 
-@strategy_bp.post("/execute/")
+def run_script(script_path, instrument_name):
+    try:
+        spec = importlib.util.spec_from_file_location(script_path.rsplit("/", 1)[-1].split(".")[0], script_path)
+        trade_script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(trade_script)
+        trade_script.main(instrument_name)
+    except Exception as e:
+        log_error(f'An error has occurred: {str(e)}')
+
+@strategy_bp.post("/start/")
 @jwt_required()
-def execute_strategy():
+def start_strategy():
     conn = None
     try:
         claims = get_jwt()
@@ -97,43 +107,144 @@ def execute_strategy():
             return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401
         data = request.json
         instrument_name = data.get('instrument')
-        strategy = data.get('strategy')
-        if not instrument_name or not strategy:
+        strategy_id = data.get('strategy_id')
+        if not instrument_name or not strategy_id:
             return jsonify({'status': 'error', 'msg': 'Missing instrument or strategy parameter'}), 400
         try:
-            strategy = int(strategy)
+            strategy_id = int(strategy_id)
         except ValueError:
             return jsonify({'status': 'error', 'msg': 'strategy must be a positive integer'}), 400
         conn = connect_to_db()
         with conn.cursor() as cur:
-            cur.execute("SELECT id, owner_id, script_path FROM strategies WHERE id= %s", (strategy,))
+            cur.execute("SELECT id, owner_id, script_path FROM strategies WHERE id= %s", (strategy_id,))
             strategy_row = cur.fetchone()
             if not strategy_row:
                 return jsonify({'status': 'error', 'msg': 'strategy not found'}), 404
-            if not strategy_row[1][0] == user_id:
+            if not strategy_row[1] == user_id:
                 return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401
             cur.execute("SELECT * FROM instruments WHERE name = %s", (instrument_name,))
             instrument = cur.fetchone()
             if not instrument:
                 return jsonify({'status': 'error', 'msg': 'instrument not found'}), 404
-            script_path = strategy_row[2][0]
-            thread = threading.Thread(target=run_script, args=(script_path, instrument_name))
-            thread.start()
+            script_path = strategy_row[2]
+            abs_script_path = os.path.join(current_app.root_path, script_path)
 
-        return jsonify({'status': 'ok', 'msg': 'Trading script started'}), 202
+            cmd = ['python', abs_script_path, instrument_name]
+            process = Popen(cmd)
+            processes[process.pid] = process
+            log_info(f'started subprocess: {str(process.pid)}')
+            log_info(f'processes: {str(processes)}')
+            # stop_event = threading.Event()
+            # thread = threading.Thread(target=run_script, args=(stop_event, script_path, instrument_name))
+            # thread.start()
+            # thread_id = str(thread.ident)
+            # threads[thread_id] = (thread, stop_event)
+
+            insert_active_strategy = """
+                                    INSERT INTO active_strategies_trades (user_id, strategy_id, instrument, is_active)
+                                    VALUES (%s, %s, %s, %s)
+                                    """
+            cur.execute(insert_active_strategy, (user_id, strategy_id, instrument_name, True))
+            conn.commit()
+        return jsonify({'status': 'ok', 'msg': 'Trading script started', 'pid': process.pid}), 202
+        # return jsonify({'status': 'ok', 'msg': 'Trading script started', 'thread_id': thread_id}), 202
     except Exception as e:
         log_error(f'An error has occurred: {str(e)}')
         return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500
 
 
-def run_script(script_path, instrument_name):
+@strategy_bp.post("/stop/")
+@jwt_required()
+def stop_strategy():
     try:
-        spec = importlib.util.spec_from_file_location(script_path.rsplit("/", 1)[-1].split(".")[0], script_path)
-        trade_script = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(trade_script)
-        trade_script.main(instrument_name)
+        claims = get_jwt()
+        user_id = claims['id']
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return jsonify({'status': 'error', 'msg': 'ID must be a positive integer'}), 400
+        if not claims['role'] == 'Trader':
+            return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401
+        data = request.json
+        # thread_id = data.get('thread_id', '')
+        pid = data.get('pid', '')
+        active_strategy_trade_id = data.get('active_id', '')
+        if not (pid or active_strategy_trade_id):
+            return jsonify({'status': 'error', 'msg': 'missing required parameters'}), 400
+        try:
+            pid = int(pid)
+        except ValueError:
+            return jsonify({'status': 'error', 'msg': 'pid must be a positive integer'}), 400
+        conn = connect_to_db()
+        with conn.cursor() as cur:
+            update_deactivated_strategy = """
+                UPDATE active_strategies_trades SET is_active = FALSE
+                WHERE id = %s
+                """
+            cur.execute(update_deactivated_strategy, (active_strategy_trade_id,))
+            conn.commit()
+        if pid in processes:
+            process = processes.pop(pid, None)
+            process.terminate()
+            process.wait()
+
+            return jsonify({'status': 'ok', 'msg': 'Stopped trading script'}), 200
+        else:
+            return jsonify({'status': 'error', 'msg': 'Process not found'}), 404
+
+        # if not (thread_id or active_strategy_trade_id):
+        #     return jsonify({'status': 'error', 'msg': 'missing required parameters'}), 400
+        # if thread_id in threads:
+        #     thread, stop_event = threads[thread_id]
+        #     conn = connect_to_db()
+        #     with conn.cursor() as cur:
+        #         cur.execute('SELECT user_id FROM active_strategy_trade WHERE id = %s', (active_strategy_trade_id,))
+        #         user_id_result = cur.fetchone()
+        #         if user_id_result:
+        #             if not user_id == user_id_result[0]:
+        #                 return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401
+        #             cur.execute('DELETE FROM active_strategy_trade WHERE id = %s', (active_strategy_trade_id,))
+        #         conn.commit()
+        #     if thread.is_alive():
+        #         # signal the thread to stop running (and looking for trades)
+        #         stop_event.set()
+        #         return jsonify({'status': 'ok', 'msg': 'Stopped trading script'}), 200
+        #     else:
+        #         del threads[thread_id]
+        #         return jsonify({'status': 'ok', 'msg': 'Thread already stopped'}), 200
+        # return jsonify({'status': 'error', 'msg': 'Thread not found'}), 404
+    except Exception as e:
+        log_error(f'An error has occurred in stopping strategy: {str(e)}')
+        return jsonify({'status': 'error', 'msg': 'An error has occurred in stopping strategy'}), 500
+
+
+@strategy_bp.get("/positions/")
+@jwt_required()
+def get_positions_by_user():
+    try:
+        claims = get_jwt()
+        user_id = claims['id']
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return jsonify({'status': 'error', 'msg': 'ID must be a positive integer'}), 400
+        conn = connect_to_db_dict_response()
+        with conn.cursor() as cur:
+            get_positions_by_user = """
+                SELECT s.name AS strategy_name, a.instrument AS instrument, t.unrealized_pl AS unrealized_pl, t.current_units AS units, t.transaction_id AS id
+                FROM active_strategies_trades a
+                JOIN strategies s
+                ON a.strategy_id = s.id
+                JOIN trades t
+                ON t.id = a.trade_id
+                WHERE a.user_id = %s AND t.state_id = 1;
+                """
+            cur.execute(get_positions_by_user, (user_id,))
+            positions = cur.fetchall()
+        return jsonify({'positions': positions}), 200
     except Exception as e:
         log_error(f'An error has occurred: {str(e)}')
+        return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500
 
 
 @strategy_bp.get("/")

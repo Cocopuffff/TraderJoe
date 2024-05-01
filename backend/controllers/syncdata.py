@@ -29,6 +29,28 @@ def get_trade_id_by_state(list_of_trade_states_dict, state):
     return None
 
 
+def check_strategy_exists(cur, strategy_id):
+    try:
+        print(f"Checking existence for strategy_id: {strategy_id}")
+        cur.execute("SELECT COUNT(*) AS count FROM strategies WHERE id = %s", (strategy_id,))
+        result = cur.fetchone()
+
+        if isinstance(result, dict):
+            count = result.get('count', 0)
+            exists = count > 0
+            print(f"Result as dict - count: {count}, exists: {exists}")
+        else:
+            # Assuming result is a tuple if not a dict
+            count = result[0]
+            exists = count > 0
+            print(f"Result as tuple - count: {count}, exists: {exists}")
+
+        return exists
+    except Exception as e:
+        print(f"Error while checking strategy existence: {e}")
+        return False
+
+
 @syncdata_bp.get('/oanda/')
 @jwt_required()
 def sync_with_oanda():
@@ -74,7 +96,7 @@ def sync_with_oanda():
                 closed_trades: [{id: id, user_id: user_id, realized_pl: realized_pl, close_time: close_time} ...]
                 """
                 check_closed_trade_response = log_trades_closed(response_data)
-                tie_order_to_trade(response_data)
+                tie_order_to_trade_and_active_strategies(response_data)
                 update_open_trade(response_data)
                 if check_closed_trade_response['updated']:
                     audit_closed_trade_and_update_trader_cash_balance(check_closed_trade_response['closed_trades'])
@@ -101,15 +123,21 @@ def log_trades_opened(response):
         trade_info = response['state']['trades']
         if len(list_of_trades_opened) == 0:
             return {'updated': None}
-        print(f'{len(list_of_trades_opened)} List of trades opened:\n')
+        print(f'{len(list_of_trades_opened)} List of trades opened.')
         log_info(f'{len(list_of_trades_opened)} List of trades opened:')
         conn = connect_to_db()
         with conn.cursor() as cur:
 
             for trade in list_of_trades_opened:
-                print(f'{len(list_of_trades_opened)} open trade: {trade}')
                 log_info(f'{len(list_of_trades_opened)} open trade: {trade}')
-                user_id = 1
+                user_id = None
+                client_extensions = trade.get('clientExtensions', '')
+                if client_extensions:
+                    user_id = client_extensions.get('tag').split("_")[1]
+                    strategy_id = client_extensions.get('comment').split("_")[1]
+                else:
+                    log_info(f"client extensions user_id not found, defaulting user_id to 1 for {trade['id']}")
+                    user_id = 1
                 transaction_id = trade['id']
                 open_time = trade['openTime']
                 current_units = trade['currentUnits']
@@ -144,7 +172,6 @@ def log_trades_opened(response):
                     """
                     values = (user_id, open_time, current_units, financing, transaction_id, initial_units, instrument, price, realized_pl, unrealized_pl, state_id, margin_used)
                     cur.execute(insert_new_trade, values)
-
             conn.commit()
         return {'updated': True}
     except KeyError as e:
@@ -171,15 +198,21 @@ def log_trades_reduced(response):
         trade_info = response['state']['trades']
         if len(list_of_trades_reduced) == 0:
             return {'updated': None}
-        print(f'{len(list_of_trades_reduced)} trades reduced:\n')
+        print(f'{len(list_of_trades_reduced)} trades reduced.')
         log_info(f'{len(list_of_trades_reduced)} trades reduced:')
         conn = connect_to_db()
         with conn.cursor() as cur:
 
             for trade in list_of_trades_reduced:
-                print(f'reduced trade: {trade}')
                 log_info(f'reduced trade: {trade}')
-                user_id = 1
+                user_id = None
+                client_extensions = trade.get('clientExtensions', '')
+                if client_extensions:
+                    user_id = client_extensions.get('tag').split("_")[1]
+                    strategy_id = client_extensions.get('comment').split("_")[1]
+                else:
+                    log_info(f"client extensions user_id not found, defaulting user_id to 1 for {trade['id']}")
+                    user_id = 1
                 transaction_id = trade['id']
                 open_time = trade['openTime']
                 current_units = trade['currentUnits']
@@ -218,7 +251,6 @@ def log_trades_reduced(response):
                     user_id, open_time, current_units, financing, transaction_id, initial_units, instrument, price,
                     realized_pl, unrealized_pl, state_id, margin_used)
                     cur.execute(insert_new_trade, values)
-
             conn.commit()
         return {'updated': True}
     except KeyError as e:
@@ -245,16 +277,22 @@ def log_trades_closed(response):
         list_of_closed_trades = []
         if len(list_of_trades_closed) == 0:
             return {'updated': None, 'closed_trades': list_of_closed_trades}
-        print(f'{len(list_of_trades_closed)} trades closed:\n')
+        print(f'{len(list_of_trades_closed)} trades closed.')
         log_info(f'{len(list_of_trades_closed)} trades closed:')
         conn = connect_to_db_dict_response()
 
         with conn.cursor() as cur:
 
             for trade in list_of_trades_closed:
-                print(f'closed trade: {trade}')
                 log_info(f'closed trade: {trade}')
-                user_id = 1
+                user_id = None
+                client_extensions = trade.get('clientExtensions', '')
+                if client_extensions:
+                    user_id = client_extensions.get('tag').split("_")[1]
+                    strategy_id = client_extensions.get('comment').split("_")[1]
+                else:
+                    log_info(f"client extensions user_id not found, defaulting user_id to 1 for {trade['id']}")
+                    user_id = 1
                 transaction_id = trade['id']
                 open_time = trade['openTime']
                 close_time = trade['closeTime']
@@ -283,8 +321,8 @@ def log_trades_closed(response):
                     RETURNING id, user_id, realized_pl, financing, close_time
                     """
                     values = (
-                    user_id, open_time, close_time, current_units, financing, initial_units, instrument, price,
-                    realized_pl, unrealized_pl, state_id, datetime.datetime.now(), margin_used, transaction_id)
+                        user_id, open_time, close_time, current_units, financing, initial_units, instrument, price,
+                        realized_pl, unrealized_pl, state_id, datetime.datetime.now(), margin_used, transaction_id)
                     cur.execute(close_trade, values)
                     closed_trade_info_dictionary = cur.fetchone()
                     list_of_closed_trades.append(closed_trade_info_dictionary)
@@ -295,8 +333,8 @@ def log_trades_closed(response):
                     RETURNING id, user_id, realized_pl, close_time
                     """
                     values = (
-                    user_id, open_time, close_time, current_units, financing, transaction_id, initial_units, instrument, price,
-                    realized_pl, unrealized_pl, state_id, margin_used)
+                        user_id, open_time, close_time, current_units, financing, transaction_id, initial_units, instrument, price,
+                        realized_pl, unrealized_pl, state_id, margin_used)
                     cur.execute(insert_new_trade, values)
                     closed_trade_info_dictionary = cur.fetchone()
                     list_of_closed_trades.append(closed_trade_info_dictionary)
@@ -320,7 +358,7 @@ def log_trades_closed(response):
             conn.close()
 
 
-def tie_order_to_trade(response):
+def tie_order_to_trade_and_active_strategies(response):
     conn = None
     try:
         orders_filled = response['changes']['ordersFilled']
@@ -330,19 +368,55 @@ def tie_order_to_trade(response):
         for order in orders_filled:
             if order['type'] == 'MARKET' and order['state'] == 'FILLED':
                 order_id = order['id']
+                oanda_trade_id = order['tradeOpenedID']
+                instrument = order['instrument']
+                user_id = None
+                strategy_id = None
+                client_extensions = order.get('clientExtensions', '')
+                if client_extensions:
+                    user_id = client_extensions.get('tag').split("_")[1]
+                    strategy_id = client_extensions.get('comment').split("_")[1]
+                else:
+                    log_info(f"client extensions user_id not found, defaulting user_id to 1 for {order['id']}")
+                    user_id = 1
                 with conn.cursor() as cur:
                     cur.execute("SELECT trader_id FROM orders WHERE order_id = %s", (order_id,))
                     trader_id = cur.fetchone()
                     if trader_id:
                         trader_id = trader_id[0]
-                        trade_id = order['tradeOpenedID']
-                        cur.execute("UPDATE trades SET user_id = %s WHERE transaction_id = %s", (trader_id, trade_id))
+
+                        cur.execute("UPDATE trades SET user_id = %s WHERE transaction_id = %s", (trader_id, oanda_trade_id))
                         cur.execute("UPDATE orders SET completed = TRUE WHERE order_id = %s", (order_id,))
+                    cur.execute('SELECT id FROM trades WHERE transaction_id = %s', (oanda_trade_id,))
+                    result = cur.fetchone()
+                    if result:
+                        trade_id = result['id']
+                    if client_extensions and strategy_id:
+
+                        if check_strategy_exists(cur, strategy_id):
+                            update_active_strategy_trade = """UPDATE active_strategies_trades SET trade_id = %s, is_active = %s
+                            WHERE user_id = %s AND strategy_id = %s AND instrument = %s AND trade_id IS NULL;
+                            """
+                            cur.execute(update_active_strategy_trade,
+                                        (trade_id, True, user_id, strategy_id, instrument))
+                            updated_rows = cur.rowcount
+
+                            if updated_rows == 0:
+                                print("no rows updated, inserting instead.")
+                                insert_active_strategy_trade = """
+                                INSERT INTO active_strategies_trades (user_id, strategy_id, instrument, trade_id, is_active)
+                                VALUES (%s, %s, %s, %s, %s)
+                                """
+                                cur.execute(insert_active_strategy_trade,
+                                            (user_id, strategy_id, instrument, trade_id, True))
+                    conn.commit()
+
         for order in orders_cancelled:
             if order['type'] == 'MARKET':
                 order_id = order['id']
                 with conn.cursor() as cur:
                     cur.execute("UPDATE orders SET completed = TRUE WHERE order_id = %s", (order_id,))
+                    conn.commit()
     except KeyError:
         log_error("JSON structure unexpected")
         raise
@@ -415,7 +489,6 @@ def update_open_trade(response):
         open_trades = response['state']['trades']
         conn = connect_to_db_dict_response()
         for order in open_trades:
-            print(order)
             unrealized_pl = order['unrealizedPL']
             margin_used = order['marginUsed']
             transaction_id = order['id']
@@ -426,7 +499,6 @@ def update_open_trade(response):
                 """
                 cur.execute(update_trade, (unrealized_pl, margin_used, transaction_id))
                 result = cur.fetchone()
-                print(result)
                 conn.commit()
     except Exception as e:
         log_error(f"error occurred updating open trades: {str(e)}")
@@ -449,7 +521,6 @@ def update_trader_nav():
             """
             cur.execute(get_unrealized_pl_by_trader)
             results = cur.fetchall()
-            print(results)
             for result in results:
                 unrealized_pl = result['sum_of_unrealized_pl']
                 user_id = result['user_id']

@@ -58,11 +58,11 @@ async def analyze_data_and_trade(data):
                 lowest = low
             current_price = float(candle['mid']['c'])
         if 'JPY' in instrument['instrument']:
-            rounded_high = f"{highest:.1f}"
-            rounded_low = f"{lowest:.1f}"
+            rounded_high = f"{highest:.2f}"
+            rounded_low = f"{lowest:.2f}"
         else:
-            rounded_high = f"{highest:.4f}"
-            rounded_low = f"{lowest:.4f}"
+            rounded_high = f"{highest:.5f}"
+            rounded_low = f"{lowest:.5f}"
     await asyncio.sleep(1)
     print("Trade signal based on data")
     stop_loss_price = rounded_low
@@ -73,15 +73,16 @@ async def analyze_data_and_trade(data):
 
 async def create_market_order_oanda(token, instrument_name, stop_loss_price, take_profit_price, units):
     async with httpx.AsyncClient() as client:
+        script_path = os.path.abspath(__file__)
         url = "http://localhost:5001/api/order/oanda/create/"
         headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
         data = {
             'instrument': instrument_name,
             'stop_loss_price': stop_loss_price,
             'take_profit_price': take_profit_price,
-            'units': units
+            'units': units,
+            'script_path': script_path
         }
-        print(f"Stop Loss Price: {stop_loss_price}, Take Profit Price: {take_profit_price}")
         print("Final data being sent to OANDA: ", data)
         response = await client.post(url, headers=headers, json=data)
         if response.status_code == 201:

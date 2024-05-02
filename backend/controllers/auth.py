@@ -142,7 +142,7 @@ def register():
                     INSERT INTO cash_balances (trader_id, balance) VALUES (%s, 0)
                     """
                 conn.execute(initialise_cash_balance, (new_trader_id[0],))
-                allocate_cash(new_trader_id[0])
+                allocate_cash(new_trader_id[0], 1000)
             conn.commit()
     except KeyError:
         return jsonify({"status": "error", "msg": "missing parameters in body"}), 400
@@ -163,14 +163,16 @@ def login():
         conn = connect_to_db()
         with conn.cursor() as cur:
             get_hash = """
-            SELECT auth.id AS user_id, auth.password_hash, user_roles.role_name AS role_name, auth.display_name AS display_name
+            SELECT auth.id AS user_id, auth.password_hash, user_roles.role_name AS role_name, auth.display_name AS display_name, auth.account_disabled
             FROM auth
             JOIN user_roles
             ON user_roles.role_id = auth.role_id
             WHERE email = %s
             """
             cur.execute(get_hash, (email,))
-            [user_id, password_hash, role_name, display_name] = cur.fetchone()
+            [user_id, password_hash, role_name, display_name, account_disabled] = cur.fetchone()
+            if account_disabled:
+                return jsonify({'status': 'error', 'msg': 'You be fired.'}), 401
         if check_password(input_password, password_hash):
             access_claims = {
                 'role': role_name,

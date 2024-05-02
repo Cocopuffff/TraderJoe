@@ -287,12 +287,21 @@ def delete_strategy_by_id():
             return jsonify({'status': 'error', 'msg': 'strategy must be a positive integer'}), 400
         conn = connect_to_db_dict_response()
         with conn.cursor() as cur:
-            cur.execute('SELECT id, owner_id, script_path FROM strategies WHERE id = %s', (strategy_id,))
+            check_for_conflict = """
+            SELECT s.id, s.owner_id, s.script_path, a.id AS active_strat_id
+            FROM strategies s
+            JOIN active_strategies_trades a
+            ON a.strategy_id = s.id
+            WHERE s.id = %s
+            """
+            cur.execute(check_for_conflict, (strategy_id,))
             strategy = cur.fetchone()
             if not strategy['owner_id'] == user_id:
                 return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401
             if not strategy:
                 return jsonify({'status': 'error', 'msg': 'strategy not found'}), 404
+            if strategy['active_strat_id']:
+                return jsonify({'status': 'error', 'msg': 'strategy is still in use!'}), 409
 
             try:
                 os.remove(strategy['script_path'])

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import styles from "./RunStrategies.module.css";
 import useFetch from "../hooks/useFetch";
 import ClearIcon from "@mui/icons-material/Clear";
+import SyncIcon from "@mui/icons-material/Sync";
 import AppContext from "../context/AppContext";
 
 const RunStrategies = () => {
@@ -70,8 +71,6 @@ const RunStrategies = () => {
       );
 
       if (res.ok) {
-        const data = await res.json();
-        console.log(data);
         getList();
       } else {
         console.log(res.data);
@@ -179,7 +178,11 @@ const RunStrategies = () => {
         <div className="col">Instrument</div>
         <div className="col">Side</div>
         <div className="col">Status</div>
-        <div className="col">Actions</div>
+        <div className="col">
+          <button onClick={getList} className={styles.deleteButton}>
+            <SyncIcon />
+          </button>
+        </div>
       </div>
       {stratInstTradeList &&
         stratInstTradeList.map((item) => {
@@ -202,7 +205,7 @@ const RunStrategies = () => {
               </div>
               <div className="col">
                 {item.pid && !item.trade_id && "Pending signal"}
-                {!item.is_active && Number(item.units) != 0 && "Open Trade"}
+                {Number(item.units) != 0 && "Open Trade"}
                 {!item.is_active && item.units === null && "Inactive"}
                 {!item.is_active && item.units === "0.000" && "Closed"}
               </div>
@@ -271,7 +274,6 @@ const RunStrategies = () => {
         <div className="col"></div>
         <div className="col"></div>
       </div>
-      {JSON.stringify(stratInstTradeList)}
     </div>
   );
 };

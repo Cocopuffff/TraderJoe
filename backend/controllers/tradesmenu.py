@@ -88,6 +88,7 @@ def get_positions_by_user():
             user_id = int(user_id)
         except ValueError:
             return jsonify({'status': 'error', 'msg': 'ID must be a positive integer'}), 400
+        sync_with_oanda()
         conn = connect_to_db_dict_response()
         with conn.cursor() as cur:
             get_positions_by_user = """
@@ -117,6 +118,7 @@ def list_active_strategies_by_user():
             user_id = int(user_id)
         except ValueError:
             return jsonify({'status': 'error', 'msg': 'ID must be a positive integer'}), 400
+        sync_with_oanda()
         conn = connect_to_db_dict_response()
         with conn.cursor() as cur:
             get_strategies_by_user = """

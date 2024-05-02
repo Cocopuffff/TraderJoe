@@ -173,6 +173,7 @@ def cancel_all_trades_by_trader_oanda():
 
 
 def cancel_trade_by_trade_id(trade_id):
+    conn = None
     try:
         endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/trades/{trade_id}/close"
         headers = {'Authorization': f'Bearer {oanda_API_key}', 'Connection': 'keep-alive'}
@@ -181,10 +182,30 @@ def cancel_trade_by_trade_id(trade_id):
         }
         response = requests.put(endpoint, headers=headers, json=data)
         if response.status_code == 200:
+            conn = connect_to_db()
+            with conn.cursor() as cur:
+                get_pid = """
+                SELECT a.pid FROM active_strategies_trades a 
+                JOIN trades t ON a.trade_id = t.id 
+                WHERE a.trade_id = %s
+                """
+                cur.execute(get_pid, (trade_id,))
+                pid = cur.fetchone()
+                if pid:
+                    pid = pid[0]
+                    cur.execute("UPDATE active_strategies_trades SET pid = NULL WHERE pid = %s", (pid,))
+                    conn.commit()
+
             return True
         else:
             log_error(f'Failed to cancel order #{trade_id[0]}: {response.status_code} {response.text}')
+
             return False
     except Exception as e:
         log_error(f'Failed to cancel order #{trade_id}: {e}')
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            conn.close()
 

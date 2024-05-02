@@ -72,8 +72,8 @@ const WatchList = (props) => {
     } catch (error) {
       if (error.name !== "AbortError") {
         console.log(error.message);
-        ErrorCtx.setIsError(true);
-        ErrorCtx.setErrorMessage(error.message);
+        AppCtx.setIsError(true);
+        AppCtx.setErrorMessage(error.message);
       }
     }
   };

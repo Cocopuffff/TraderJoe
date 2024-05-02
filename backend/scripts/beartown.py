@@ -27,6 +27,7 @@ async def get_token():
 async def fetch_market_data(instrument_name):
     try:
         async with httpx.AsyncClient() as client:
+            print(f'instrument: {instrument_name}')
             response = await client.get(f'{oanda_platform}/v3/accounts/{oanda_account}/candles/latest?candleSpecifications={instrument_name}:D:M', headers={'Authorization': 'Bearer ' + oanda_API_key})
             response.raise_for_status()
             return response.json()
@@ -44,6 +45,7 @@ async def analyze_data_and_trade(data):
     highest = float('-inf')
     lowest = float('inf')
     current_price = None
+    print(data)
     for instrument in data['latestCandles']:
         candles = instrument['candles']
         for candle in candles:
@@ -60,11 +62,11 @@ async def analyze_data_and_trade(data):
         else:
             rounded_high = f"{highest:.5f}"
             rounded_low = f"{lowest:.5f}"
-    await asyncio.sleep(1)
+    await asyncio.sleep(15)
     print("Trade signal based on data")
-    stop_loss_price = rounded_low
-    take_profit = rounded_high
-    units = 10000
+    stop_loss_price = rounded_high
+    take_profit = rounded_low
+    units = -8888
     return True, stop_loss_price, take_profit, units
 
 

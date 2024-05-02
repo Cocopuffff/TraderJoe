@@ -122,11 +122,11 @@ def list_active_strategies_by_user():
         with conn.cursor() as cur:
             get_strategies_by_user = """
                 SELECT a.id as id, s.name AS strategy_name, a.instrument AS instrument, t.initial_units AS initial_units, 
-                t.current_units AS units, t.transaction_id AS trade_id, a.is_active as is_active
+                t.current_units AS units, t.transaction_id AS trade_id, a.is_active as is_active, a.pid as pid
                 FROM active_strategies_trades a
                 JOIN strategies s
                 ON a.strategy_id = s.id
-                JOIN trades t
+                LEFT JOIN trades t
                 ON t.id = a.trade_id
                 JOIN instruments i
                 ON a.instrument = i.name

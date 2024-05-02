@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify, current_app
 import os
 from flask_jwt_extended import jwt_required, get_jwt
 from backend.utilities import log_info, log_error, log_warning
+from backend.controllers.order import cancel_trade_by_trade_id
 from backend.db.db import connect_to_db, connect_to_db_dict_response
 from werkzeug.utils import secure_filename
 import threading
@@ -134,17 +135,12 @@ def start_strategy():
             processes[process.pid] = process
             log_info(f'started subprocess: {str(process.pid)}')
             log_info(f'processes: {str(processes)}')
-            # stop_event = threading.Event()
-            # thread = threading.Thread(target=run_script, args=(stop_event, script_path, instrument_name))
-            # thread.start()
-            # thread_id = str(thread.ident)
-            # threads[thread_id] = (thread, stop_event)
 
             insert_active_strategy = """
-                                    INSERT INTO active_strategies_trades (user_id, strategy_id, instrument, is_active)
-                                    VALUES (%s, %s, %s, %s)
+                                    INSERT INTO active_strategies_trades (user_id, strategy_id, instrument, is_active, pid)
+                                    VALUES (%s, %s, %s, %s, %s)
                                     """
-            cur.execute(insert_active_strategy, (user_id, strategy_id, instrument_name, True))
+            cur.execute(insert_active_strategy, (user_id, strategy_id, instrument_name, True, process.pid))
             conn.commit()
         return jsonify({'status': 'ok', 'msg': 'Trading script started', 'pid': process.pid}), 202
         # return jsonify({'status': 'ok', 'msg': 'Trading script started', 'thread_id': thread_id}), 202
@@ -153,9 +149,10 @@ def start_strategy():
         return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500
 
 
-@strategy_bp.post("/stop/")
+@strategy_bp.delete("/stop/")
 @jwt_required()
 def stop_strategy():
+    conn = None
     try:
         claims = get_jwt()
         user_id = claims['id']
@@ -166,56 +163,52 @@ def stop_strategy():
         if not claims['role'] == 'Trader':
             return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401
         data = request.json
-        # thread_id = data.get('thread_id', '')
-        pid = data.get('pid', '')
         active_strategy_trade_id = data.get('active_id', '')
-        if not (pid or active_strategy_trade_id):
+        print(f'active_id: {active_strategy_trade_id}')
+        if not active_strategy_trade_id:
             return jsonify({'status': 'error', 'msg': 'missing required parameters'}), 400
-        try:
-            pid = int(pid)
-        except ValueError:
-            return jsonify({'status': 'error', 'msg': 'pid must be a positive integer'}), 400
+        pid = None
         conn = connect_to_db()
         with conn.cursor() as cur:
-            update_deactivated_strategy = """
-                UPDATE active_strategies_trades SET is_active = FALSE
-                WHERE id = %s
+            get_pid = """
+                SELECT a.pid AS pid, t.transaction_id AS trade_id, t.close_time as close_time 
+                FROM active_strategies_trades a JOIN trades t ON a.trade_id = t.id 
+                WHERE a.id = %s
                 """
-            cur.execute(update_deactivated_strategy, (active_strategy_trade_id,))
-            conn.commit()
-        if pid in processes:
-            process = processes.pop(pid, None)
-            process.terminate()
-            process.wait()
+            cur.execute(get_pid, (active_strategy_trade_id,))
+            result = cur.fetchone()
+            cur.execute('DELETE FROM active_strategies_trades WHERE id = %s', (active_strategy_trade_id,))
+            if result:
+                pid = result[0]
+                trade_id = result[1]
+                close_time = result[2]
+                if trade_id and close_time is None:
+                    is_successful = cancel_trade_by_trade_id(trade_id)
+                    if not is_successful:
+                        conn.rollback()
+                conn.commit()
+                if not pid:
+                    return jsonify({'status': 'ok', 'msg': 'deleted'}), 200
+            else:
+                return jsonify({'status': 'ok', 'msg': 'Stopped trading script'}), 200
+            if pid and os.path.exists(f'/proc/{pid}'):
+                process = processes.pop(pid, None)
+                if process:
+                    process.terminate()
+                    process.wait()
 
-            return jsonify({'status': 'ok', 'msg': 'Stopped trading script'}), 200
-        else:
-            return jsonify({'status': 'error', 'msg': 'Process not found'}), 404
+                return jsonify({'status': 'ok', 'msg': 'Stopped trading script'}), 200
+            else:
+                return jsonify({'status': 'error', 'msg': 'Process not found'}), 404
 
-        # if not (thread_id or active_strategy_trade_id):
-        #     return jsonify({'status': 'error', 'msg': 'missing required parameters'}), 400
-        # if thread_id in threads:
-        #     thread, stop_event = threads[thread_id]
-        #     conn = connect_to_db()
-        #     with conn.cursor() as cur:
-        #         cur.execute('SELECT user_id FROM active_strategy_trade WHERE id = %s', (active_strategy_trade_id,))
-        #         user_id_result = cur.fetchone()
-        #         if user_id_result:
-        #             if not user_id == user_id_result[0]:
-        #                 return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401
-        #             cur.execute('DELETE FROM active_strategy_trade WHERE id = %s', (active_strategy_trade_id,))
-        #         conn.commit()
-        #     if thread.is_alive():
-        #         # signal the thread to stop running (and looking for trades)
-        #         stop_event.set()
-        #         return jsonify({'status': 'ok', 'msg': 'Stopped trading script'}), 200
-        #     else:
-        #         del threads[thread_id]
-        #         return jsonify({'status': 'ok', 'msg': 'Thread already stopped'}), 200
-        # return jsonify({'status': 'error', 'msg': 'Thread not found'}), 404
     except Exception as e:
         log_error(f'An error has occurred in stopping strategy: {str(e)}')
+        if conn:
+            conn.rollback()
         return jsonify({'status': 'error', 'msg': 'An error has occurred in stopping strategy'}), 500
+    finally:
+        if conn:
+            conn.close()
 
 
 @strategy_bp.get("/")

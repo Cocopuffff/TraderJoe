@@ -53,7 +53,7 @@ def create_app():
 
     conn = connect_to_db()
     with conn.cursor() as cur:
-        cur.execute("UPDATE active_strategies_trades SET is_active = FALSE")
+        cur.execute("UPDATE active_strategies_trades SET is_active = FALSE, pid = NULL")
         conn.commit()
     conn.close()
 

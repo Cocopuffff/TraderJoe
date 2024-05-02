@@ -15,22 +15,24 @@ const RunStrategies = () => {
   const appCtx = useContext(AppContext);
 
   const handleChange = (event) => {
-    switch (event.target.id) {
+    switch (event.currentTarget.id) {
       case "strategy":
         setSelectedStrategy(event.target.value);
+        break;
       case "instrument":
         setSelectedInstrument(event.target.value);
+        break;
       default:
-        console.log(event.target.id);
+        console.log(event.target.value);
     }
   };
 
   const handleDelete = async (event) => {
     try {
       const res = await fetchData(
-        "/api/tradesMenu/strategies/",
+        "/api/strategy/stop/",
         "DELETE",
-        { id: event.currentTarget.id },
+        { active_id: event.currentTarget.id },
         appCtx.accessToken
       );
 
@@ -48,9 +50,41 @@ const RunStrategies = () => {
     }
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     console.log(`selectedStrategy: ${selectedStrategy}`);
     console.log(`selectedInstrument: ${selectedInstrument}`);
+    try {
+      const body = {
+        instrument: selectedInstrument,
+        strategy_id: selectedStrategy,
+      };
+
+      const res = await fetch(
+        import.meta.env.VITE_SERVER + "/api/strategy/start/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + appCtx.accessToken,
+          },
+          body: JSON.stringify(body),
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log(data);
+        getList();
+      } else {
+        console.log(res.data);
+        appCtx.setErrorMessage(res.data);
+        appCtx.setIsError(true);
+      }
+    } catch (error) {
+      console.log(error.message);
+      appCtx.setErrorMessage(error.message);
+      appCtx.setIsError(true);
+    }
   };
 
   const getList = async () => {
@@ -109,7 +143,19 @@ const RunStrategies = () => {
       );
 
       if (res.ok) {
-        setInstruments(res.data.instruments);
+        setInstruments(
+          res.data.instruments.toSorted((a, b) => {
+            const nameA = a.display_name.toUpperCase();
+            const nameB = b.display_name.toUpperCase();
+            if (nameA > nameB) {
+              return 1;
+            } else if (nameA < nameB) {
+              return -1;
+            } else {
+              return 0;
+            }
+          })
+        );
       } else {
         console.log(res.data);
         appCtx.setErrorMessage(res.data.msg);
@@ -150,12 +196,17 @@ const RunStrategies = () => {
                     : styles.downColour
                 }`}
               >
-                {Number(item.initial_units) > 0 ? "Long" : "Short"}
+                {item.initial_units == null
+                  ? ""
+                  : Number(item.initial_units) > 0
+                  ? "Long"
+                  : "Short"}
               </div>
               <div className="col">
-                {item.is_active && "Pending signal"}
-                {!item.is_active && Number(item.units) > 0 && "Open Trade"}
-                {Number(item.units) == 0 && "Inactive"}
+                {item.pid && !item.trade_id && "Pending signal"}
+                {!item.is_active && Number(item.units) != 0 && "Open Trade"}
+                {!item.is_active && item.units === null && "Inactive"}
+                {!item.is_active && item.units === "0.000" && "Closed"}
               </div>
               <div className="col">
                 <button
@@ -175,16 +226,18 @@ const RunStrategies = () => {
             <select
               name="strategy"
               id="strategy"
-              defaultValue=""
+              value={selectedStrategy}
               className={styles.input}
               onChange={handleChange}
             >
-              <option value="" disabled selected>
+              <option value="" disabled>
                 Select a strategy
               </option>
               {strategyDropdownList &&
                 strategyDropdownList.map((item) => (
-                  <option id={item.id}>{item.name}</option>
+                  <option value={item.id} key={item.id}>
+                    {item.name}
+                  </option>
                 ))}
             </select>
           </div>
@@ -194,16 +247,18 @@ const RunStrategies = () => {
             <select
               name="instrument"
               id="instrument"
-              defaultValue=""
+              value={selectedInstrument}
               className={styles.input}
               onChange={handleChange}
             >
-              <option value="" disabled selected>
+              <option value="" disabled>
                 Select an instrument
               </option>
               {instruments &&
                 instruments.map((item) => (
-                  <option id={item.name}>{item.display_name}</option>
+                  <option value={item.name} key={item.name}>
+                    {item.display_name}
+                  </option>
                 ))}
             </select>
           </div>
@@ -218,6 +273,7 @@ const RunStrategies = () => {
         <div className="col"></div>
         <div className="col"></div>
       </div>
+      {JSON.stringify(stratInstTradeList)}
     </div>
   );
 };

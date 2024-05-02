@@ -170,3 +170,21 @@ def cancel_all_trades_by_trader_oanda():
     except Exception as e:
         log_error(f'Unexpected error: {str(e)}')
         return jsonify({'status': 'error', 'message': 'An unexpected error has occurred'}), 500
+
+
+def cancel_trade_by_trade_id(trade_id):
+    try:
+        endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/trades/{trade_id}/close"
+        headers = {'Authorization': f'Bearer {oanda_API_key}', 'Connection': 'keep-alive'}
+        data = {
+            'order': 'ALL'
+        }
+        response = requests.put(endpoint, headers=headers, json=data)
+        if response.status_code == 200:
+            return True
+        else:
+            log_error(f'Failed to cancel order #{trade_id[0]}: {response.status_code} {response.text}')
+            return False
+    except Exception as e:
+        log_error(f'Failed to cancel order #{trade_id}: {e}')
+

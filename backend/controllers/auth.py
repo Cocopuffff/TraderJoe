@@ -130,7 +130,7 @@ def register():
                 can_trade = True
             register_user = f"""
             INSERT INTO auth(display_name, password_hash, email, role_id, can_trade) VALUES
-            (%s, %s, %s, %s)
+            (%s, %s, %s, %s, %s)
             RETURNING id
             """
             cur.execute(register_user, (display_name, hashed, email, role_id, can_trade))

@@ -373,7 +373,8 @@ def tie_order_to_trade_and_active_strategies(response):
         conn = connect_to_db_dict_response()
 
         for order in orders_filled:
-            if order['type'] == 'MARKET' and order['state'] == 'FILLED':
+            if order['type'] == 'MARKET' and order['state'] == 'FILLED' and not order['positionFill'] == 'REDUCE_ONLY':
+                print(order)
                 order_id = order['id']
                 oanda_trade_id = order['tradeOpenedID']
                 instrument = order['instrument']

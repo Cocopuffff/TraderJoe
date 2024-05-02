@@ -33,7 +33,6 @@ def get_trade_history_by_userid():
             cur.execute(get_closed_trades, (user_id,))
             items = cur.fetchall()
             results = [item for item in items]
-            print(results)
             return jsonify({'history': results})
     except KeyError:
         return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401

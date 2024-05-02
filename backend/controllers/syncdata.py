@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from dotenv import load_dotenv
 import os, requests, datetime
 from flask_jwt_extended import jwt_required, get_jwt
-from backend.utilities import log_info, log_error, log_warning
+from backend.utilities import log_info, log_error, log_warning, get_function_name
 from backend.db.db import connect_to_db, connect_to_db_dict_response
 from decimal import Decimal
 
@@ -54,7 +54,9 @@ def check_strategy_exists(cur, strategy_id):
 @syncdata_bp.get('/oanda/')
 @jwt_required()
 def sync_with_oanda():
+    function_name = None
     try:
+        function_name = get_function_name()
         endpoint = f"{oanda_platform}/v3/accounts/{oanda_account}/changes"
         db_latest_transaction_id = """
         SELECT last_transaction_id 
@@ -107,23 +109,24 @@ def sync_with_oanda():
                 update_all_margin_used_and_available()
                 return jsonify({'status': 'ok'}), 200
             except ValueError as e:
-                log_error(f'Invalid JSON response: {response_data}\nerror: {e}')
+                log_error(f'Invalid JSON response: {response_data}\nerror: {e}', function_name)
                 return jsonify({'status': 'error', 'message': 'Invalid JSON response'}), 500
         else:
-            log_error(f'Failed to fetch data: {response.status_code} {response.text}')
+            log_error(f'Failed to fetch data: {response.status_code} {response.text}', function_name)
     except Exception as e:
-        log_error(f'Unexpected error: {str(e)}')
+        log_error(f'Unexpected error: {str(e)}', function_name)
         return jsonify({'status': 'error', 'message': 'An unexpected error has occurred'}), 500
 
 
 def log_trades_opened(response):
     conn = None
+    function_name = None
     try:
+        function_name = get_function_name()
         list_of_trades_opened = response['changes']['tradesOpened']
         trade_info = response['state']['trades']
         if len(list_of_trades_opened) == 0:
             return {'updated': None}
-        print(f'{len(list_of_trades_opened)} List of trades opened.')
         log_info(f'{len(list_of_trades_opened)} List of trades opened:')
         conn = connect_to_db()
         with conn.cursor() as cur:
@@ -176,13 +179,13 @@ def log_trades_opened(response):
         return {'updated': True}
     except KeyError as e:
         print(f'KeyError: {e}')
-        log_error(f'error when logging open trades: {e}')
+        log_error(f'error when logging open trades: {e}', function_name)
         if conn:
             conn.rollback()
         raise
     except Exception as e:
         print(e)
-        log_error(f'error when logging open trades: {e}')
+        log_error(f'error when logging open trades: {e}', function_name)
         if conn:
             conn.rollback()
         raise
@@ -193,7 +196,9 @@ def log_trades_opened(response):
 
 def log_trades_reduced(response):
     conn = None
+    function_name = None
     try:
+        function_name = get_function_name()
         list_of_trades_reduced = response['changes']['tradesReduced']
         trade_info = response['state']['trades']
         if len(list_of_trades_reduced) == 0:
@@ -255,13 +260,13 @@ def log_trades_reduced(response):
         return {'updated': True}
     except KeyError as e:
         print(f'KeyError: {e}')
-        log_error(f'error when logging open trades: {e}')
+        log_error(f'error when logging open trades: {e}', function_name)
         if conn:
             conn.rollback()
         raise
     except Exception as e:
         print(e)
-        log_error(f'error when logging open trades: {e}')
+        log_error(f'error when logging open trades: {e}', function_name)
         if conn:
             conn.rollback()
         raise
@@ -272,7 +277,9 @@ def log_trades_reduced(response):
 
 def log_trades_closed(response):
     conn = None
+    function_name = None
     try:
+        function_name = get_function_name()
         list_of_trades_closed = response['changes']['tradesClosed']
         list_of_closed_trades = []
         if len(list_of_trades_closed) == 0:
@@ -343,13 +350,13 @@ def log_trades_closed(response):
         return {'updated': True, 'closed_trades': list_of_closed_trades}
     except KeyError as e:
         print(f'KeyError: {e}')
-        log_error(f'error when logging open trades: {e}')
+        log_error(f'error when logging open trades: {e}', function_name)
         if conn:
             conn.rollback()
         raise
     except Exception as e:
         print(e)
-        log_error(f'error when logging open trades: {e}')
+        log_error(f'error when logging open trades: {e}', function_name)
         if conn:
             conn.rollback()
         raise

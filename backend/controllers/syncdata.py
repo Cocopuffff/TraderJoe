@@ -376,7 +376,9 @@ def tie_order_to_trade_and_active_strategies(response):
             if order['type'] == 'MARKET' and order['state'] == 'FILLED' and not order['positionFill'] == 'REDUCE_ONLY':
                 print(order)
                 order_id = order['id']
-                oanda_trade_id = order['tradeOpenedID']
+                oanda_trade_id = order.get('tradeOpenedID', '')
+                if not oanda_trade_id:
+                    oanda_trade_id = order.get('tradeReducedID', '')
                 instrument = order['instrument']
                 user_id = None
                 strategy_id = None

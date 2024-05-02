@@ -43,12 +43,17 @@ def allocate_cash(trader_id, add_balance=1000):
     # write sql statement to get unallocated capital
     conn = None
     try:
+        print(trader_id)
+        print(add_balance)
         if not isinstance(trader_id, int):
             raise TypeError("Trader ID must be an integer")
         if not isinstance(add_balance, (float, int)):
             raise TypeError("add_balance must be a number")
         conn = connect_to_db()
         with conn.cursor() as cur:
+            cur.execute("SELECT balance FROM cash_balances WHERE trader_id = %s", (trader_id,))
+            if cur.fetchone() is None:
+                raise Exception(f"user id {trader_id} not found")
             check_sufficient_capital = """
                 SELECT balance, nav FROM cash_balances
                 WHERE description = 'Unallocated Capital' AND id=1;
@@ -65,13 +70,16 @@ def allocate_cash(trader_id, add_balance=1000):
             unallocated_cash_balance -= add_balance
             unallocated_nav = list_of_unallocated_cash_and_nav_tuples[1]
             unallocated_nav -= add_balance
+            print(add_balance)
             update_unallocated_cash_balance = """
             UPDATE cash_balances
             SET balance = %s, nav = %s
             WHERE description = 'Unallocated Capital' AND id=1;
             """
             cur.execute(update_unallocated_cash_balance, (unallocated_cash_balance, unallocated_nav))
-
+            print(f"Rows updated: {cur.rowcount}")
+            if cur.rowcount == 0:
+                print("No rows updated, check trader_id exists and data is correct")
             # update trader balance
             allocate_trader_balance = """
                 UPDATE cash_balances
@@ -79,6 +87,9 @@ def allocate_cash(trader_id, add_balance=1000):
                 WHERE trader_id = %s
                 """
             cur.execute(allocate_trader_balance, (add_balance, add_balance, add_balance, add_balance, trader_id,))
+            print(f"Rows updated: {cur.rowcount}")
+            if cur.rowcount == 0:
+                print("No rows updated, check trader_id exists and data is correct")
             conn.commit()
     except Exception as e:
         print(e)
@@ -106,6 +117,7 @@ def register():
 
         # check db for unique email & display name and valid role
         new_trader_id = None
+        role_id = None
         conn = connect_to_db()
         with conn.cursor() as cur:
             find_duplicates = """
@@ -141,9 +153,9 @@ def register():
                 initialise_cash_balance = """
                     INSERT INTO cash_balances (trader_id, balance) VALUES (%s, 0)
                     """
-                conn.execute(initialise_cash_balance, (new_trader_id[0],))
-                allocate_cash(new_trader_id[0], 1000)
+                cur.execute(initialise_cash_balance, (new_trader_id[0],))
             conn.commit()
+        allocate_cash(new_trader_id[0], 1000)
     except KeyError:
         return jsonify({"status": "error", "msg": "missing parameters in body"}), 400
     except Exception as e:

@@ -171,12 +171,13 @@ def stop_strategy():
         conn = connect_to_db()
         with conn.cursor() as cur:
             get_pid = """
-                SELECT a.pid AS pid, t.transaction_id AS trade_id, t.close_time as close_time 
-                FROM active_strategies_trades a JOIN trades t ON a.trade_id = t.id 
+                SELECT a.pid AS pid, t.transaction_id AS trade_id, t.close_time as close_time, a.id as id 
+                FROM active_strategies_trades a LEFT JOIN trades t ON a.trade_id = t.id 
                 WHERE a.id = %s
                 """
             cur.execute(get_pid, (active_strategy_trade_id,))
             result = cur.fetchone()
+            print(result)
             cur.execute('DELETE FROM active_strategies_trades WHERE id = %s', (active_strategy_trade_id,))
             if result:
                 pid = result[0]
@@ -190,6 +191,7 @@ def stop_strategy():
                 if not pid:
                     return jsonify({'status': 'ok', 'msg': 'deleted'}), 200
             else:
+                print("here")
                 return jsonify({'status': 'ok', 'msg': 'Stopped trading script'}), 200
             if pid and os.path.exists(f'/proc/{pid}'):
                 process = processes.pop(pid, None)

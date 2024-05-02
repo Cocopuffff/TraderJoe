@@ -51,8 +51,6 @@ const RunStrategies = () => {
   };
 
   const handleStart = async () => {
-    console.log(`selectedStrategy: ${selectedStrategy}`);
-    console.log(`selectedInstrument: ${selectedInstrument}`);
     try {
       const body = {
         instrument: selectedInstrument,

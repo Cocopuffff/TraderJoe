@@ -44,3 +44,13 @@
 .buttonGood:hover {
   color: #fff;
 }
+
+.input {
+  background-color: var(--bs-gray-100);
+  margin-top: 10px;
+  margin-bottom: 10px;
+  min-height: 2rem;
+  border: 1px solid var(--selected);
+  border-radius: 5px;
+  max-width: 90%;
+}

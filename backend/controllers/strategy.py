@@ -3,7 +3,7 @@ import importlib.util
 from flask import Blueprint, request, jsonify, current_app
 import os
 from flask_jwt_extended import jwt_required, get_jwt
-from backend.utilities import log_info, log_error, log_warning
+from backend.utilities import log_info, log_error, log_warning, get_function_name
 from backend.controllers.order import cancel_trade_by_trade_id
 from backend.db.db import connect_to_db, connect_to_db_dict_response
 from werkzeug.utils import secure_filename
@@ -271,6 +271,7 @@ def get_strategies_types():
 @jwt_required()
 def delete_strategy_by_id():
     try:
+        function_name = get_function_name()
         claims = get_jwt()
         user_id = claims['id']
         try:
@@ -280,7 +281,7 @@ def delete_strategy_by_id():
         if not claims['role'] == 'Trader':
             return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401
         data = request.json
-        strategy_id = data.get('id')
+        strategy_id = data.get('id', '')
         if not strategy_id:
             return jsonify({'status': 'error', 'msg': 'Missing strategy parameter'}), 400
         try:
@@ -292,7 +293,7 @@ def delete_strategy_by_id():
             check_for_conflict = """
             SELECT s.id, s.owner_id, s.script_path, a.id AS active_strat_id
             FROM strategies s
-            JOIN active_strategies_trades a
+            LEFT JOIN active_strategies_trades a
             ON a.strategy_id = s.id
             WHERE s.id = %s
             """
@@ -302,7 +303,7 @@ def delete_strategy_by_id():
                 return jsonify({'status': 'error', 'msg': 'unauthorized'}), 401
             if not strategy:
                 return jsonify({'status': 'error', 'msg': 'strategy not found'}), 404
-            if strategy['active_strat_id']:
+            if strategy.get('active_strat_id', ''):
                 return jsonify({'status': 'error', 'msg': 'strategy is still in use!'}), 409
 
             try:
@@ -315,7 +316,7 @@ def delete_strategy_by_id():
             conn.commit()
             return jsonify({'status': 'ok', 'msg': 'Strategy deleted successfully'}), 200
     except Exception as e:
-        log_error(f"an error has occurred: {str(e)}")
+        log_error(f"an error has occurred: {str(e)}", function_name)
         return jsonify({'status': 'error', 'msg': 'an error has occurred'}), 500
 
 
